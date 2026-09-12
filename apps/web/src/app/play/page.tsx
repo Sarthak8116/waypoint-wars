@@ -156,12 +156,23 @@ function SoloHunt({ bundle, routeId }: { bundle: HuntBundle; routeId: string }) 
   const handleSubmit = useCallback(async () => {
     if (!image) return;
     await hunt.submit(image, answer, API_URL);
+
+    // Clear ONLY the photo, and only so "Retake photo" is the obvious next
+    // step. The written answer is deliberately kept: a rejection is usually
+    // about the photo, and live Gemini often says so explicitly ("the text
+    // answer matches the accepted list") while the player is made to retype a
+    // correct answer on a street corner. Both are cleared for real on the
+    // next checkpoint, in handleAdvance.
     setImage(null);
-    setAnswer('');
   }, [image, answer, hunt]);
 
   const handleAdvance = useCallback(() => {
     hunt.advance();
+    // NOW clear both — a new checkpoint means a new answer. (handleSubmit
+    // deliberately keeps the answer so a rejected photo can be retaken
+    // without retyping a correct answer.)
+    setAnswer('');
+    setImage(null);
     const next = checkpoints[state.activeIndex + 1];
     if (location.source === 'demo' && next) location.walkTo(next);
   }, [hunt, checkpoints, state.activeIndex, location]);

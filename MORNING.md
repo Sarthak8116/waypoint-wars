@@ -119,6 +119,25 @@ it found no product bugs: the creator was correct all along.
 
 **Every user journey in this project has now been driven end to end.**
 
+### One thing about running the browser suites
+
+`check:solo` and `check:multiplayer` submit a 1x1 blank test photo. The MOCK
+provider approves it on a correct answer; **live Gemini looks at pixels and
+correctly refuses** — that is the feature working, not a failure. Boot the
+server with an empty key to run them:
+
+```bash
+cd apps/multiplayer-server && GEMINI_API_KEY= npx tsx src/index.ts
+```
+
+`check:solo` exits 2 with that instruction if it detects a live key.
+
+The live REJECTION path is verified separately and looks good — see
+`.screenshots/12-live-rejection.png`. Real Gemini returned: *"The image
+provided is entirely black, making it impossible to see the landmark or any
+red object. The text answer matches the accepted list."* Specific, honest, and
+it tells the player their answer was right.
+
 ### ⚠️ Verify the history before you say it out loud
 
 The content is yours, but I have not fact-checked it. Your own seed file says

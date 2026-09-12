@@ -51,6 +51,18 @@ async function main() {
   const health = await fetch(`${API}/health`).then((r) => r.json()).catch(() => null);
   console.log(`  server: ${health ? `gemini=${health.integrations.gemini}` : 'UNREACHABLE'}`);
 
+  // This harness submits a 1x1 blank JPEG. The MOCK provider approves on a
+  // correct answer; LIVE Gemini looks at pixels and rightly refuses — which is
+  // the feature working, not a failure. Boot the server with GEMINI_API_KEY=
+  // empty to run this suite.
+  if (health?.integrations?.gemini === 'live') {
+    console.log('\n  ⚠ Gemini is LIVE. A blank test photo cannot pass real verification.');
+    console.log('    Boot the server with `GEMINI_API_KEY= npx tsx src/index.ts` and re-run.');
+    console.log('    (Rejection with a live model is verified separately — see');
+    console.log('     .screenshots/12-live-rejection.png.)\n');
+    process.exit(2);
+  }
+
   const browser = await chromium.launch();
   const context = await browser.newContext({
     viewport: { width: 430, height: 900 },
