@@ -1,5 +1,59 @@
 # Deploying Waypoint Wars
 
+**It is deployed.**
+
+| | |
+| --- | --- |
+| Web app | https://waypoint-wars-2c9bimqa9-waypoint-wars.vercel.app |
+| Room server | https://waypoint-server-production-a3be.up.railway.app |
+| Repo | https://github.com/Sarthak8116/waypoint-wars |
+
+Verified against the live hosts: `check:browser` 22/22 and
+`check:multiplayer` 17/17 — two browsers playing each other over the public
+internet, `wss://` connecting, different routes, server-issued instructions.
+
+```bash
+WEB_URL=https://waypoint-wars-2c9bimqa9-waypoint-wars.vercel.app \
+API_URL=https://waypoint-server-production-a3be.up.railway.app \
+  pnpm check:browser
+```
+
+## Four things that went wrong, so they do not surprise you again
+
+1. **Vercel could not find Next.js.** It looks in the ROOT package.json; ours
+   is in `apps/web`. Fixed by setting the project's **Root Directory** to
+   `apps/web` — a project setting, not a `vercel.json` field, so it has to be
+   set through the dashboard or the API.
+2. **`--prebuilt` deploys fail on pnpm.** The build trace references the root
+   `node_modules/.pnpm` store, which is not inside the uploaded app directory.
+   Let Vercel build it; do not build locally and upload.
+3. **Deployment Protection was on by default** (`ssoProtection:
+   all_except_custom_domains`), so every route 302'd to a login. Disabled, or
+   judges cannot open the link.
+4. **Railway IaC deletes variables it does not declare.** See
+   `.railway/railway.ts` — the key is declared there but its value comes from
+   the environment at apply time, with a guard that throws rather than
+   silently dropping it.
+
+## Redeploying
+
+```bash
+# web
+vercel --prod --yes
+
+# server (key must be present, the config guard enforces it)
+GEMINI_API_KEY=$(grep '^GEMINI_API_KEY=' .env.local | cut -d= -f2-) \
+  railway config apply --yes
+railway up --service waypoint-server --detach
+```
+
+GitHub auto-deploy is NOT connected — Vercel wanted a login connection on the
+GitHub account. Deploys are manual via the CLI, which is fine.
+
+---
+
+## Original notes
+
 Repo: https://github.com/Sarthak8116/waypoint-wars
 
 **GitHub cannot host this app.** Pages is static-only, and this needs a Node

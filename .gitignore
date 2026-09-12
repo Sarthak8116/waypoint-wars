@@ -31,3 +31,4 @@ apps/web/public/hunts/
 
 # browser-check screenshots
 .screenshots/
+.vercel
