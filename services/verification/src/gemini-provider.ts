@@ -34,6 +34,24 @@ import {
 export const GEMINI_MODEL_ID = process.env.GEMINI_MODEL_ID ?? 'gemini-3.6-flash';
 
 /**
+ * Where verification goes when the primary model's quota is gone.
+ *
+ * Gemini's free tier meters generate_content PER MODEL — measured live:
+ * gemini-3.6-flash answered 429 `limit: 20` while gemini-flash-lite-latest
+ * answered normally on the same key in the same second. A rate-limited
+ * verifier degrades every submission to "answer accepted, photo NOT
+ * verified", which is honest but is not the product working.
+ */
+export const GEMINI_FALLBACK_MODEL_ID =
+  process.env.GEMINI_FALLBACK_MODEL_ID ?? 'gemini-flash-lite-latest';
+
+/** True for errors another model might not have. */
+function isQuotaOrAvailability(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return /RESOURCE_EXHAUSTED|429|quota|rate limit|404|NOT_FOUND|is not found/i.test(msg);
+}
+
+/**
  * Measured latency, vision + structured output, 3 calls each:
  *   gemini-3.6-flash         4.6s  (default — better landmark matching)
  *   gemini-flash-lite-latest 0.9s  (5x faster; try it if latency hurts)
@@ -305,16 +323,43 @@ export class GeminiVerificationProvider implements VerificationProvider {
     this.models = new GoogleGenAI({ apiKey }).models;
   }
 
+  /** Latched once the primary model's quota is gone. */
+  private exhausted = false;
+
   async verify(input: VerificationInput): Promise<VerificationResult> {
     try {
-      const payload = await this.requestVerdict(input);
+      const payload = await this.requestVerdict(
+        input,
+        this.exhausted ? GEMINI_FALLBACK_MODEL_ID : this.modelId,
+      );
       return { ...payload, mocked: false };
     } catch (error) {
+      /**
+       * One hop to the fallback model, and only for quota/availability —
+       * retrying a malformed response or a timeout elsewhere would just hide
+       * it. Latched, so subsequent submissions do not each burn a doomed
+       * request against the exhausted model first.
+       */
+      if (!this.exhausted && isQuotaOrAvailability(error)) {
+        this.exhausted = true;
+        console.warn(
+          `[verify] ${this.modelId} is rate-limited or unavailable; falling back to ${GEMINI_FALLBACK_MODEL_ID}.`,
+        );
+        try {
+          const payload = await this.requestVerdict(input, GEMINI_FALLBACK_MODEL_ID);
+          return { ...payload, mocked: false };
+        } catch (fallbackError) {
+          return inconclusiveResult(describeFailure(fallbackError), false);
+        }
+      }
       return inconclusiveResult(describeFailure(error), false);
     }
   }
 
-  private async requestVerdict(input: VerificationInput): Promise<GeminiVerdictPayload> {
+  private async requestVerdict(
+    input: VerificationInput,
+    modelId: string,
+  ): Promise<GeminiVerdictPayload> {
     const { data, mimeType } = splitImagePayload(input.imageBase64, input.mimeType);
     if (data === '') {
       throw new VerificationProviderError('malformed-response', 'No photo was attached.');
@@ -326,7 +371,7 @@ export class GeminiVerificationProvider implements VerificationProvider {
     try {
       const response = await withTimeout(
         this.models.generateContent({
-          model: this.modelId,
+          model: modelId,
           contents: [
             {
               role: 'user',

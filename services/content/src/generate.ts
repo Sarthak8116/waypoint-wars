@@ -23,7 +23,7 @@ import {
   type Route,
 } from '@ww/shared';
 import { findLandmarks, geocode, PlacesError, type Place } from './places.js';
-import { createDrafter, type Drafter } from './draft.js';
+import { createDrafter, type Drafter, DRAFT_MODEL_ID } from './draft.js';
 
 export interface GenerateRequest {
   /** "Miami", "Downtown Austin", "Edinburgh Old Town" — anything geocodable. */
@@ -332,6 +332,14 @@ export async function generateHunt(
    * single likeliest cause — an exhausted Gemini free-tier quota — is
    * something the operator can actually fix.
    */
+  // A hunt written by the fallback model is still a real hunt, but the
+  // operator should know their primary quota is gone before demo day.
+  if (!drafter.mocked && drafter.modelUsed !== DRAFT_MODEL_ID) {
+    warnings.push(
+      `Clues were written by ${drafter.modelUsed}, not ${DRAFT_MODEL_ID} — the primary model was rate-limited or unavailable.`,
+    );
+  }
+
   if (placeholders.length > 0) {
     const rateLimited = placeholders.filter((p) => p.reason === 'rate-limited').length;
     warnings.push(

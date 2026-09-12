@@ -38,6 +38,23 @@ export function classifyDraftFailure(err: unknown): DraftFailure {
 
 export const DRAFT_MODEL_ID = process.env.GEMINI_MODEL_ID ?? 'gemini-3.6-flash';
 
+/**
+ * Where drafting goes when the primary model's quota is gone.
+ *
+ * Gemini's free tier meters `generate_content` PER MODEL — measured live:
+ * gemini-3.6-flash answered 429 with `limit: 20` while
+ * gemini-flash-lite-latest answered normally on the same key in the same
+ * second. A ten-stop hunt spends ten requests, so the primary bucket empties
+ * fast and the whole "create a hunt anywhere" feature silently fills with
+ * placeholders.
+ *
+ * Falling back is strictly better than a placeholder: a real clue from a
+ * smaller model beats "[DRAFT] Find <name>". The switch is recorded so the
+ * report can say which model wrote the hunt.
+ */
+export const FALLBACK_MODEL_ID =
+  process.env.GEMINI_FALLBACK_MODEL_ID ?? 'gemini-flash-lite-latest';
+
 /** Matches the verification service; see its notes on erratic latency. */
 const TIMEOUT_MS = 45_000;
 
@@ -289,14 +306,67 @@ function mockDraft(place: Place): RawDraft {
 export interface Drafter {
   draft(place: Place, opts?: DraftOptions): Promise<DraftedCheckpoint>;
   readonly mocked: boolean;
+  /** Which model actually wrote the clues — may differ after a fallback. */
+  readonly modelUsed: string;
 }
 
 class GeminiDrafter implements Drafter {
   readonly mocked = false;
   private readonly ai: GoogleGenAI;
 
+  /**
+   * Latched once the primary model's quota is gone.
+   *
+   * Without this every checkpoint in the run would burn its own doomed
+   * request against the exhausted model before falling back — ten wasted
+   * round trips on a ten-stop hunt, and ten chances to hit a different
+   * failure on the way.
+   */
+  private exhausted = false;
+
+  /** Which model actually wrote the clues. Surfaced in the report. */
+  modelUsed: string = DRAFT_MODEL_ID;
+
   constructor(apiKey: string) {
     this.ai = new GoogleGenAI({ apiKey });
+  }
+
+  /**
+   * One model call, with a single hop to the fallback model on a quota or
+   * model-availability error. Any other failure propagates: retrying a
+   * malformed response or a timeout on a different model just hides it.
+   */
+  private async generate(context: string) {
+    const request = (model: string) =>
+      this.ai.models.generateContent({
+        model,
+        contents: [{ role: 'user', parts: [{ text: context }] }],
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION,
+          temperature: 0.7, // some variety across checkpoints; not zero
+          responseMimeType: 'application/json',
+          responseSchema: RESPONSE_SCHEMA as never,
+          // Minimal thinking: this is bounded copywriting, and extended
+          // reasoning only adds latency across ~15 sequential calls.
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+          httpOptions: { timeout: TIMEOUT_MS },
+        },
+      });
+
+    if (this.exhausted) return request(FALLBACK_MODEL_ID);
+
+    try {
+      return await request(DRAFT_MODEL_ID);
+    } catch (err) {
+      const cause = classifyDraftFailure(err);
+      if (cause !== 'rate-limited' && cause !== 'model-unavailable') throw err;
+      this.exhausted = true;
+      this.modelUsed = FALLBACK_MODEL_ID;
+      console.warn(
+        `[draft] ${DRAFT_MODEL_ID} is ${cause}; falling back to ${FALLBACK_MODEL_ID} for the rest of this hunt.`,
+      );
+      return request(FALLBACK_MODEL_ID);
+    }
   }
 
   async draft(place: Place, opts: DraftOptions = {}): Promise<DraftedCheckpoint> {
@@ -311,20 +381,7 @@ class GeminiDrafter implements Drafter {
     ].join('\n');
 
     try {
-      const res = await this.ai.models.generateContent({
-        model: DRAFT_MODEL_ID,
-        contents: [{ role: 'user', parts: [{ text: context }] }],
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          temperature: 0.7, // some variety across checkpoints; not zero
-          responseMimeType: 'application/json',
-          responseSchema: RESPONSE_SCHEMA as never,
-          // Minimal thinking: this is bounded copywriting, and extended
-          // reasoning only adds latency across ~15 sequential calls.
-          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-          httpOptions: { timeout: TIMEOUT_MS },
-        },
-      });
+      const res = await this.generate(context);
 
       const raw = JSON.parse(res.text ?? '{}') as RawDraft;
       if (!raw.clue || !raw.observationQuestion || !raw.acceptedAnswers?.length) {
@@ -358,6 +415,7 @@ class GeminiDrafter implements Drafter {
 }
 
 class MockDrafter implements Drafter {
+  readonly modelUsed = 'none (labelled mock)';
   readonly mocked = true;
   async draft(place: Place, opts: DraftOptions = {}): Promise<DraftedCheckpoint> {
     return { checkpoint: assemble(place, mockDraft(place), opts), needsReview: true, mocked: true };
