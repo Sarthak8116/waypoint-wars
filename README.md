@@ -95,12 +95,24 @@ Unit tests pass on code that does not work — that happened repeatedly during
 this build. These drive the real system instead:
 
 ```bash
-# server must be running; use GEMINI_API_KEY= to spend no quota
-pnpm --filter @ww/multiplayer-server e2e        # room forms, privacy, anti-cheat
-pnpm --filter @ww/multiplayer-server e2e:full   # a COMPLETE race, both players
-pnpm --filter @ww/multiplayer-server e2e:team   # team mode: shared route + score
-pnpm --filter @ww/multiplayer-server check:gemini  # real API round-trip
+# server must be running; boot it with GEMINI_API_KEY= to spend no quota
+pnpm --filter @ww/multiplayer-server e2e            # room, privacy, anti-cheat
+pnpm --filter @ww/multiplayer-server e2e:full       # a COMPLETE race
+pnpm --filter @ww/multiplayer-server e2e:team       # team mode
+pnpm --filter @ww/multiplayer-server e2e:reconnect  # drop and return
+pnpm --filter @ww/multiplayer-server e2e:hints      # hints cost XP
+pnpm --filter @ww/multiplayer-server e2e:publish    # creator publish -> playable
+pnpm --filter @ww/multiplayer-server check:gemini   # real API round-trip
+
+# real headless Chromium — these found the bugs unit tests could not
+pnpm check:browser        # rendering, canvases, no sideways scroll
+pnpm check:solo           # a complete solo hunt, photo and all
+pnpm check:multiplayer    # TWO browsers playing each other
+pnpm check:creator        # map editing + the preview round-trip
 ```
+
+Screenshots land in `.screenshots/`. Looking at them caught three layout bugs
+no assertion did.
 
 ---
 

@@ -11,7 +11,8 @@
     "test": "vitest run --passWithNoTests",
     "check:browser": "node scripts/browser-check.mjs",
     "check:solo": "node scripts/browser-solo-run.mjs",
-    "check:multiplayer": "node scripts/browser-multiplayer.mjs"
+    "check:multiplayer": "node scripts/browser-multiplayer.mjs",
+    "check:creator": "node scripts/browser-creator.mjs"
   },
   "dependencies": {
     "@ww/game": "workspace:*",

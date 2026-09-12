@@ -112,8 +112,12 @@ distinct checkpoints, instruction on every arrival, 1250 XP at the finish.
 room, join by code, both navigate to /race, different clues, arrive, get the
 server-issued instruction. It found the lobby bug below.
 
-Still unverified: creator marker dragging, and the localStorage preview
-round-trip (write in /creator, walk it in /play).
+`pnpm check:creator` covers the last two gaps — click-to-add, marker dragging,
+the validation gate blocking an incomplete draft, and the full preview
+round-trip (write in /creator, walk it in /play, clear it again). 14/14, and
+it found no product bugs: the creator was correct all along.
+
+**Every user journey in this project has now been driven end to end.**
 
 ### ⚠️ Verify the history before you say it out loud
 

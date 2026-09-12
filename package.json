@@ -17,7 +17,8 @@
     "demo:reset": "rm -rf .data && pnpm --filter @ww/data build && pnpm --filter @ww/data validate && node apps/web/scripts/sync-content.mjs",
     "check:browser": "pnpm --filter @ww/web check:browser",
     "check:solo": "pnpm --filter @ww/web check:solo",
-    "check:multiplayer": "pnpm --filter @ww/web check:multiplayer"
+    "check:multiplayer": "pnpm --filter @ww/web check:multiplayer",
+    "check:creator": "pnpm --filter @ww/web check:creator"
   },
   "devDependencies": {
     "typescript": "^5.7.3",
