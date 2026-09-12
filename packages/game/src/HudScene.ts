@@ -19,7 +19,10 @@
  * `mountGame` path — never from the package barrel.
  */
 
-import Phaser from 'phaser';
+// Phaser 3.90's ESM build has NO default export (only named ones), while its
+// .d.ts declares one — so a default import typechecks but is undefined at
+// runtime under webpack/Vite. A namespace import is correct for both.
+import * as Phaser from 'phaser';
 import {
   assertNever,
   type HudEvent,

@@ -32,7 +32,10 @@
  * `GameBridge` is reused (or one `HUD_RESYNC` is replayed), nothing is lost.
  */
 
-import Phaser from 'phaser';
+// Phaser 3.90's ESM build has NO default export (only named ones), while its
+// .d.ts declares one — so a default import typechecks but is undefined at
+// runtime under webpack/Vite. A namespace import is correct for both.
+import * as Phaser from 'phaser';
 import type { LeaderboardEntry } from '@ww/shared';
 import { GameBridge } from './bridge.js';
 import { HudScene, HUD_SCENE_KEY } from './HudScene.js';

@@ -10,7 +10,10 @@
  * SSR: imports Phaser at module scope. Reachable only through `mountGame`.
  */
 
-import Phaser from 'phaser';
+// Phaser 3.90's ESM build has NO default export (only named ones), while its
+// .d.ts declares one — so a default import typechecks but is undefined at
+// runtime under webpack/Vite. A namespace import is correct for both.
+import * as Phaser from 'phaser';
 import type { LeaderboardEntry } from '@ww/shared';
 import type { HitRegionRegistry, ResultsSummary } from './types.js';
 import { huntFinishedSequence, revealLeaderboard } from './animations.js';

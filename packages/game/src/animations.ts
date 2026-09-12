@@ -20,7 +20,7 @@
  * erased to zero runtime imports and stays safe to load in Node and during SSR.
  */
 
-import type Phaser from 'phaser';
+import type * as Phaser from 'phaser';
 import { COLORS, FONT } from './theme.js';
 
 /**
