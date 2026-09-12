@@ -47,7 +47,7 @@ import { Server as ColyseusServer } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 
 import { huntStore } from './hunt-store.js';
-import { createRepository, validateHuntBundle, type HuntRepository } from './persistence/index.js';
+import { initRepository, validateHuntBundle, type HuntRepository } from './persistence/index.js';
 import { verifySubmission } from '@ww/verification';
 import { getVerificationProvider } from './verification-provider.js';
 import { ensureSeeded } from './seed.js';
@@ -69,7 +69,7 @@ ensureSeeded({ logger: console });
  * `createRepository` never throws — a failed Mongo connection falls back to
  * file storage rather than preventing boot.
  */
-const repository: HuntRepository = await createRepository({
+const repository: HuntRepository = await initRepository({
   mongoUri: process.env.MONGODB_URI,
   mongoDb: process.env.MONGODB_DB,
   repoRoot,

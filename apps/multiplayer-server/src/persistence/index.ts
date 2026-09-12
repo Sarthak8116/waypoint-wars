@@ -84,3 +84,30 @@ export async function createRepository(opts: RepositoryOptions): Promise<HuntRep
   console.log(`[persistence] using file storage at ${path}`);
   return new FileRepository(path);
 }
+
+// ---------------------------------------------------------------------------
+// Process-wide singleton
+// ---------------------------------------------------------------------------
+
+/**
+ * One repository per process, reachable from both the Express routes and the
+ * Colyseus room. The room cannot take it as a constructor argument — Colyseus
+ * instantiates rooms itself — so this mirrors how `huntStore` is shared.
+ *
+ * `setRepository` exists for tests, which must never touch the real disk.
+ */
+let singleton: HuntRepository | null = null;
+
+export async function initRepository(opts: RepositoryOptions): Promise<HuntRepository> {
+  singleton ??= await createRepository(opts);
+  return singleton;
+}
+
+/** Null until `initRepository` resolves. Callers must tolerate that. */
+export function getRepository(): HuntRepository | null {
+  return singleton;
+}
+
+export function setRepositoryForTesting(repo: HuntRepository | null): void {
+  singleton = repo;
+}

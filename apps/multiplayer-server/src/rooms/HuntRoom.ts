@@ -57,6 +57,7 @@ import {
   type Hunt,
   type LatLng,
   type LeaderboardEntry,
+  type CompletedRun,
   type LocationSample,
   type Route,
   type ServerMessage,
@@ -64,6 +65,7 @@ import {
 import { verifySubmission } from '@ww/verification';
 
 import { huntStore } from '../hunt-store.js';
+import { getRepository } from '../persistence/index.js';
 import { ensureSeeded } from '../seed.js';
 import { getVerificationProvider } from '../verification-provider.js';
 import { assertSubmissionMatchesActiveCheckpoint } from './guards.js';
@@ -883,6 +885,69 @@ export class HuntRoom extends Room<HuntRoomState> {
       entries,
       finishedAt: now,
     } satisfies ServerMessage);
+
+    // Persist AFTER broadcasting: players see their leaderboard immediately,
+    // and a slow or failed write never delays the end of the hunt.
+    void this.persistCompletedRuns(now);
+  }
+
+  /**
+   * Write each finished run to durable storage.
+   *
+   * This is where the live breadcrumb trail stops being ephemeral. PLAN.md P8
+   * is explicit that high-frequency locations are NOT persisted continuously —
+   * they live in the room while the hunt runs, and only the completed path is
+   * saved, once, here.
+   *
+   * Failure is logged and swallowed. A storage problem must never take down a
+   * room full of players who have just finished; the leaderboard they are
+   * looking at has already been broadcast from authoritative state.
+   */
+  private async persistCompletedRuns(finishedAt: number): Promise<void> {
+    const repository = getRepository();
+    if (!repository) return;
+
+    const startedAt = this.state.startedAt;
+
+    for (const run of this.runs.values()) {
+      // Team runs have several members; stitch their trails together so the
+      // replay shows the path the team actually walked.
+      const members = [...this.members.values()].filter((m) => m.entityId === run.entityId);
+      const path = members
+        .flatMap((m) => m.path)
+        .sort((a, b) => a.timestamp - b.timestamp);
+
+      const primary = members[0];
+
+      const completed: CompletedRun = {
+        id: `${this.roomId}:${run.entityId}`,
+        huntId: this.state.settings.huntId,
+        routeId: run.routeId,
+        playerId: run.entityId,
+        playerName: run.displayName,
+        ...(run.isTeam ? { teamId: run.entityId } : {}),
+        // The schema stores this as a plain string; it was validated through
+        // `normalizeMode` at room creation, so the narrowing is sound.
+        mode: this.state.settings.mode as GameMode,
+        startedAt,
+        finishedAt: run.finishedAt ?? finishedAt,
+        totalXp: run.state.totalXp,
+        checkpoints: [...run.completed],
+        path,
+        achievements: deriveAchievements(run),
+      };
+
+      try {
+        await repository.saveCompletedRun(completed);
+      } catch (err) {
+        console.error(
+          `[room] could not persist run ${completed.id}:`,
+          err instanceof Error ? err.message : err,
+        );
+      }
+
+      void primary;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -1162,4 +1227,26 @@ function normalizeMode(mode: unknown): GameMode {
 function clampInt(value: unknown, min: number, max: number, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
   return Math.min(max, Math.max(min, Math.trunc(value)));
+}
+
+/**
+ * Badges earned by a finished run.
+ *
+ * Deliberately derived from the run rather than stored as it goes: the run is
+ * the source of truth, so a badge can never disagree with the numbers on the
+ * results screen.
+ */
+function deriveAchievements(run: HuntRun): string[] {
+  const badges: string[] = [];
+  const hintsUsed = run.completed.filter((c) => c.hintUsed).length;
+  const wrong = run.completed.reduce((n, c) => n + c.incorrectAttempts, 0);
+
+  if (run.completed.length > 0) badges.push('pittsburgh-beginner');
+  if (hintsUsed === 0) badges.push('no-hints');
+  if (wrong === 0) badges.push('flawless');
+  if (run.isTeam) badges.push('team-player');
+  if (run.needsReviewCount === 0 && wrong === 0 && hintsUsed === 0) {
+    badges.push('hidden-historian');
+  }
+  return badges;
 }
