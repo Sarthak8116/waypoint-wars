@@ -77,7 +77,7 @@ Read `ARCHITECTURE.md` for why the boundaries are where they are, and
 ```bash
 pnpm dev             # web + server together
 pnpm build           # build everything
-pnpm test            # 158+ tests across engine, verification, HUD, rooms
+pnpm test            # 222 tests across engine, verification, HUD, rooms
 pnpm typecheck       # whole workspace
 
 pnpm --filter @ww/data build      # regenerate pittsburgh-hunts.json from the seed
