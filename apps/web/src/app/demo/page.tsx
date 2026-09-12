@@ -94,13 +94,18 @@ export default function DemoPage() {
           color: 'var(--accent)',
           border: '1px solid var(--accent)',
           borderRadius: 999,
-          padding: '6px 14px',
-          fontSize: 12,
+          padding: '5px 12px',
+          fontSize: 11,
           fontWeight: 700,
+          // Was clipped off both edges at phone width: translateX(-50%) plus
+          // nowrap plus a label wider than the viewport.
+          maxWidth: 'calc(100vw - 24px)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
         }}
       >
-        ▶ Demo Mode — simulated movement, real scoring
+        ▶ Demo Mode — real scoring
       </div>
 
       {bundle.isFallback && (
@@ -115,9 +120,10 @@ export default function DemoPage() {
             color: 'var(--warn)',
             border: '1px solid var(--warn)',
             borderRadius: 999,
-            padding: '6px 14px',
-            fontSize: 12,
+            padding: '5px 12px',
+            fontSize: 11,
             fontWeight: 700,
+            maxWidth: 'calc(100vw - 24px)',
           }}
         >
           ⚠ Placeholder content

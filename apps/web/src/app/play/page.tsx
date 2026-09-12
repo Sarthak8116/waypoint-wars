@@ -195,9 +195,9 @@ function SoloHunt({ bundle, routeId }: { bundle: HuntBundle; routeId: string }) 
       <div ref={hudRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
 
       {bundle.isFallback && (
-        <Banner tone="warn">⚠ Placeholder content — curated routes not loaded</Banner>
+        <Banner tone="warn">⚠ Placeholder content</Banner>
       )}
-      {location.source === 'demo' && <Banner tone="info">▶ Demo Mode — simulated movement</Banner>}
+      {location.source === 'demo' && <Banner tone="info">▶ Demo Mode</Banner>}
 
       <SoloPanel
         hunt={hunt}
@@ -230,9 +230,15 @@ function Banner({ tone, children }: { tone: 'warn' | 'info'; children: React.Rea
         color: tone === 'warn' ? 'var(--warn)' : 'var(--accent)',
         border: `1px solid ${tone === 'warn' ? 'var(--warn)' : 'var(--accent)'}`,
         borderRadius: 999,
-        padding: '6px 14px',
-        fontSize: 12,
+        padding: '5px 12px',
+        fontSize: 11,
         fontWeight: 700,
+        // The Phaser HUD draws XP at top-left and the timer at top-right, so
+        // this has to fit BETWEEN them. nowrap + a long label overflowed into
+        // both on a 430px phone — only visible in a screenshot.
+        maxWidth: 'calc(100vw - 200px)',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
       }}
     >

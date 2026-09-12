@@ -28,3 +28,6 @@ apps/web/public/hunts/
 
 # local persistence snapshot
 .data/
+
+# browser-check screenshots
+.screenshots/
