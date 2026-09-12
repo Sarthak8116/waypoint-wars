@@ -25,3 +25,6 @@ coverage/
 
 # synced at build time from data/
 apps/web/public/hunts/
+
+# local persistence snapshot
+.data/

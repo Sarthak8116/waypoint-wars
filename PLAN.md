@@ -31,7 +31,7 @@ finish at the **same** destination, and see a leaderboard + animated route repla
 - [ ] **P5 — Gemini verification**
 - [ ] **P6 — Phaser HUD layer**
 - [x] **P7 — Colyseus multiplayer**
-- [ ] **P8 — Persistence (Mongo adapter + in-memory fallback)**
+- [x] **P8 — Persistence (Mongo adapter + file-backed default)**
 - [ ] **P9 — Route replay + demo mode**
 - [ ] **P10 — Creator dashboard**
 - [ ] **P11 — Optional: Querit + ElevenLabs**

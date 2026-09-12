@@ -32,6 +32,7 @@ import { Server as ColyseusServer } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 
 import { huntStore } from './hunt-store.js';
+import { createRepository, validateHuntBundle, type HuntRepository } from './persistence/index.js';
 import { ensureSeeded } from './seed.js';
 import { HuntRoom } from './rooms/HuntRoom.js';
 import { isValidRoomCode, roomCodes } from './rooms/room-codes.js';
@@ -46,6 +47,17 @@ ensureSeeded({ logger: console });
 
 // Explicit annotation: pnpm's nested layout makes the inferred Express type
 // unnameable across package boundaries (TS2742).
+/**
+ * Persistence. Created eagerly at module load so every route can use it;
+ * `createRepository` never throws — a failed Mongo connection falls back to
+ * file storage rather than preventing boot.
+ */
+const repository: HuntRepository = await createRepository({
+  mongoUri: process.env.MONGODB_URI,
+  mongoDb: process.env.MONGODB_DB,
+  repoRoot,
+});
+
 const app: Express = express();
 
 app.use(cors());
@@ -63,7 +75,9 @@ app.get('/health', (_req, res) => {
     time: new Date().toISOString(),
     integrations: {
       gemini: process.env.GEMINI_API_KEY ? 'live' : 'mocked',
-      mongo: process.env.MONGODB_URI ? 'live' : 'in-memory',
+      // Reports what ACTUALLY connected, not what was configured — a Mongo
+      // URI that failed falls back to file storage, and the badge must say so.
+      storage: repository.kind,
       elevenlabs: process.env.ELEVENLABS_API_KEY ? 'live' : 'disabled',
       querit: process.env.QUERIT_API_KEY ? 'live' : 'mocked',
     },
@@ -112,6 +126,70 @@ app.get('/api/rooms/:code', (req, res) => {
     return;
   }
   res.json({ code, roomId });
+});
+
+// ---------------------------------------------------------------------------
+// Creator dashboard: publish a hunt
+// ---------------------------------------------------------------------------
+
+/**
+ * Accepts a `{hunt, routes, checkpoints}` bundle from the creator dashboard.
+ *
+ * Validation is strict and happens BEFORE anything is written, because the
+ * failure mode it prevents is discovering mid-race that three routes end at
+ * different checkpoints — `assignRoutes` throws, and the room dies with
+ * players in it. Rejecting at the door costs the creator a red message;
+ * accepting bad content costs the demo.
+ *
+ * A published hunt is loaded into the live store immediately, so a creator can
+ * publish and play without restarting the server.
+ */
+app.post('/api/hunts', (req, res) => {
+  void (async () => {
+    const result = validateHuntBundle(req.body);
+    if (!result.ok) {
+      res.status(422).json({ error: 'Hunt bundle is not valid.', details: result.errors });
+      return;
+    }
+
+    try {
+      await repository.saveHuntBundle(result.bundle);
+      huntStore.load(result.bundle);
+      res.status(201).json({
+        ok: true,
+        huntId: result.bundle.hunt.id,
+        routes: result.bundle.routes.length,
+        checkpoints: result.bundle.checkpoints.length,
+        storage: repository.kind,
+      });
+    } catch (err) {
+      console.error('[api] failed to save hunt bundle', err);
+      res.status(500).json({ error: 'Could not save the hunt.' });
+    }
+  })();
+});
+
+/** Hunts available on this server, for the creator's open/import list. */
+app.get('/api/hunts', (_req, res) => {
+  void (async () => {
+    try {
+      res.json({ hunts: await repository.listHunts(), storage: repository.kind });
+    } catch {
+      res.status(500).json({ error: 'Could not list hunts.' });
+    }
+  })();
+});
+
+/** Completed runs for a hunt — the persistent leaderboard. */
+app.get('/api/hunts/:huntId/runs', (req, res) => {
+  void (async () => {
+    try {
+      const runs = await repository.listCompletedRuns(String(req.params['huntId']), 50);
+      res.json({ runs });
+    } catch {
+      res.status(500).json({ error: 'Could not list runs.' });
+    }
+  })();
 });
 
 const server = http.createServer(app);
