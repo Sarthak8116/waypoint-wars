@@ -66,10 +66,13 @@ const LAYOUT_CSS = `
   flex: 1;
   min-height: 0;
 }
-.creator-col { overflow-y: auto; min-height: 0; max-height: calc(100dvh - 72px); }
+/* min-width:0 matters: a grid item defaults to min-width:auto, so it refuses
+   to shrink below its content and the whole column overflowed the viewport by
+   ~30px at phone width. Only visible in a screenshot. */
+.creator-col { overflow-y: auto; min-width: 0; min-height: 0; max-height: calc(100dvh - 72px); }
 .creator-map { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); min-height: 420px; }
 @media (max-width: 1180px) {
-  .creator-grid { grid-template-columns: 1fr; }
+  .creator-grid { grid-template-columns: minmax(0, 1fr); }
   .creator-col { max-height: none; overflow: visible; }
   .creator-map { height: 60vh; }
 }

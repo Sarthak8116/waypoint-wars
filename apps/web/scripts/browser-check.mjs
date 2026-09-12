@@ -98,6 +98,22 @@ async function main() {
   const browser = await chromium.launch();
 
   try {
+    // --- no page may scroll horizontally at phone width -------------------
+    // A grid item defaults to min-width:auto and refuses to shrink below its
+    // content; the creator overflowed by 30px that way. Invisible to every
+    // other check in this repo.
+    console.log('\nhorizontal overflow @430px');
+    for (const path of ['/', '/play', '/demo', '/lobby', '/creator']) {
+      const { page, context } = await openPage(browser, path);
+      await page.waitForTimeout(1200);
+      const o = await page.evaluate(() => ({
+        scroll: document.body.scrollWidth,
+        view: window.innerWidth,
+      }));
+      check(`${path} does not scroll sideways`, o.scroll <= o.view + 1, `${o.scroll} vs ${o.view}`);
+      await context.close();
+    }
+
     // --- home ------------------------------------------------------------
     console.log('\n/');
     {
