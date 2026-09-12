@@ -110,6 +110,10 @@ export default function Home() {
       </div>
 
       <div className="stack" style={{ gap: 12 }}>
+        {/* The product, first: a hunt anywhere. */}
+        <a className="btn btn-lime btn-block" href="/create">
+          ✦ Create a hunt anywhere
+        </a>
         <a className="btn btn-pink btn-block" href="/play">
           Play solo
         </a>
@@ -121,7 +125,7 @@ export default function Home() {
             Watch replay
           </a>
           <a className="btn btn-ghost" style={{ flex: 1 }} href="/creator">
-            Creator
+            Editor
           </a>
         </div>
       </div>
