@@ -62,17 +62,14 @@ async function newPlayer(browser, label) {
  * assertion.
  */
 async function currentClue(page) {
-  const header = page.locator('text=/CLUE \\d+ OF/i').first();
-  if (await header.count()) {
-    // The clue paragraph is the sibling right after the CLUE n OF m label.
-    const text = await page.evaluate(() => {
-      const label = [...document.querySelectorAll('p')].find((el) =>
-        /CLUE\s+\d+\s+OF/i.test(el.textContent ?? ''),
-      );
-      return label?.nextElementSibling?.textContent?.trim() ?? '';
-    });
+  // A stable hook, not visible copy. Matching on the label text broke twice
+  // during redesigns and each time looked like a product regression.
+  const clue = page.locator('[data-testid="clue"]').first();
+  if (await clue.count()) {
+    const text = (await clue.textContent().catch(() => null))?.trim() ?? '';
     if (text) return text;
   }
+  // Arrived screens show the observation question instead of the clue.
   const q = await page.locator('h3').first().textContent().catch(() => null);
   return (q ?? '').trim();
 }
@@ -164,7 +161,7 @@ async function main() {
     // --- host solves one checkpoint through the UI -----------------------
     // The race screen defaults to REAL GPS, so simulated walking has to be
     // switched on first; only then does the "Walk there" control appear.
-    const demoBtn = host.page.locator('button:has-text("Demo Mode")');
+    const demoBtn = host.page.locator('button:has-text("Use demo location")');
     if (await demoBtn.count()) {
       await demoBtn.click();
       await host.page.waitForTimeout(800);
@@ -206,7 +203,7 @@ async function main() {
       check('guest can see the opponent on their screen', guestSeesOpponent > 0);
 
       const bodyHost = await host.page.locator('body').innerText();
-      const advanced = /CLUE 2 OF|You're here/i.test(bodyHost);
+      const advanced = /Checkpoint 2 of|You're here/i.test(bodyHost);
       check('host advanced past the first checkpoint', advanced, bodyHost.slice(0, 60).replace(/\n/g, ' | '));
     }
 

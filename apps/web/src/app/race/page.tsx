@@ -19,6 +19,8 @@ import { GameBridge, type GameHandle } from '@ww/game';
 import { useRoom } from '@/lib/RoomProvider';
 import { useLocation } from '@/lib/useLocation';
 import PhotoCapture from '@/components/PhotoCapture';
+import BackButton from '@/components/BackButton';
+import ProgressBar from '@/components/ProgressBar';
 
 const HuntMap = dynamic(() => import('@/components/HuntMap'), { ssr: false });
 
@@ -220,65 +222,110 @@ export default function RacePage() {
   // --- Screens -------------------------------------------------------------
   if (view.phase === 'idle' || view.phase === 'error') {
     return (
-      <main className="wrap">
-        <h1 style={{ fontSize: 24 }}>Not in a room</h1>
-        <p className="muted">{view.error ?? 'Join or create a room to race.'}</p>
-        <a className="btn primary" href="/lobby">
-          Go to lobby
+      <main className="wrap stack">
+        <div>
+          <BackButton label="Home" />
+        </div>
+        <div>
+          <h1 className="display" style={{ fontSize: 40 }}>
+            Not in a room
+          </h1>
+          <p className="muted" style={{ fontSize: 17 }}>
+            {view.error ?? 'Join or create a room to race.'}
+          </p>
+        </div>
+        <a className="btn btn-cyan btn-block" href="/lobby">
+          Go to the lobby
+        </a>
+        {/* Never a dead end: the seeded hunt needs no server and no room. */}
+        <a className="btn btn-lime btn-block" href="/play?demo=1">
+          ▶ Start Pittsburgh demo instead
         </a>
       </main>
     );
   }
 
   if (view.phase === 'finished') {
+    const me = view.leaderboard.find((e) => e.playerId === view.selfId);
+    const ordinal = (n: number) =>
+      n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`;
+
+    // REWARD REGISTER: light surface, full-bleed accent hero. See DESIGN-BRIEF.
     return (
-      <main className="wrap">
-        <h1 style={{ fontSize: 28, marginBottom: 4 }}>Everyone made it to The Point</h1>
-        <p className="muted" style={{ marginTop: 0 }}>
-          Different routes, different discoveries, same finish.
-        </p>
-        <div className="card" style={{ margin: '16px 0' }}>
-          {view.leaderboard.map((e) => (
+      <main className="wrap stack">
+        {me && (
+          <div className={`hero ${me.rank === 1 ? 'hero-lime' : 'hero-cyan'}`}>
+            <p className="label" style={{ marginBottom: 6 }}>
+              {me.rank === 1 ? 'You won' : 'You finished'}
+            </p>
+            <p className="display" style={{ fontSize: 76, lineHeight: 0.9 }}>
+              {ordinal(me.rank)}
+            </p>
+            <p className="label" style={{ marginTop: 6, marginBottom: 0 }}>
+              {me.xp} XP · {me.checkpointsCompleted}/{me.totalCheckpoints} checkpoints
+            </p>
+          </div>
+        )}
+
+        <div>
+          <h1 className="display" style={{ fontSize: 34 }}>
+            Everyone made it to The Point
+          </h1>
+          <p className="muted" style={{ fontSize: 17, marginTop: 8 }}>
+            Different routes, different discoveries, same finish.
+          </p>
+        </div>
+
+        <section className="card">
+          <p className="label dim" style={{ marginBottom: 12 }}>
+            Final standings
+          </p>
+          {view.leaderboard.map((e, i) => (
             <div
               key={e.playerId}
               style={{
                 display: 'flex',
                 gap: 12,
                 alignItems: 'center',
-                padding: '9px 0',
-                borderBottom: '1px solid var(--line)',
+                padding: '12px 0',
+                borderTop: i === 0 ? 'none' : '2px solid var(--border)',
               }}
             >
-              <span style={{ fontWeight: 800, width: 24, color: 'var(--muted)' }}>{e.rank}</span>
-              <span style={{ flex: 1, fontWeight: 700 }}>{e.displayName}</span>
-              <span className="muted" style={{ fontSize: 13 }}>
+              <span
+                className="mono"
+                style={{
+                  fontWeight: 900,
+                  width: 30,
+                  fontSize: 20,
+                  color: e.rank === 1 ? 'var(--yellow)' : 'var(--dim)',
+                }}
+              >
+                {e.rank}
+              </span>
+              <span style={{ flex: 1, fontWeight: 800 }}>
+                {e.displayName}
+                {e.playerId === view.selfId && (
+                  <span className="dim" style={{ fontWeight: 600 }}> · you</span>
+                )}
+              </span>
+              <span className="dim" style={{ fontSize: 13 }}>
                 {e.checkpointsCompleted}/{e.totalCheckpoints}
               </span>
-              <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{e.xp} XP</span>
+              <span style={{ fontWeight: 900, color: 'var(--lime)' }}>{e.xp} XP</span>
             </div>
           ))}
-        </div>
-        <a className="btn primary" style={{ width: '100%' }} href="/demo">
-          Watch route replay
+        </section>
+
+        {/* Replay belongs at the end of a run, not on the landing page. */}
+        <a className="btn btn-cyan btn-block" href="/demo" style={{ minHeight: 64, fontSize: 19 }}>
+          Watch the route replay
+        </a>
+        <a className="btn btn-ghost btn-block" href="/">
+          Back to start
         </a>
       </main>
     );
   }
-
-  const sheet: React.CSSProperties = {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 30,
-    background: 'var(--surface)',
-    borderTop: '1px solid var(--line)',
-    borderRadius: '18px 18px 0 0',
-    padding: 16,
-    paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
-    maxHeight: '70dvh',
-    overflowY: 'auto',
-  };
 
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
@@ -298,41 +345,26 @@ export default function RacePage() {
         />
       </div>
 
+      {/* Other people are racing; leaving is deliberate. */}
+      <BackButton floating label="Leave" confirm="Leave the race?" />
+
       <div ref={hudRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
 
-      {location.source === 'demo' && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 10,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 20,
-            background: 'rgba(94,234,212,0.14)',
-            color: 'var(--accent)',
-            border: '1px solid var(--accent)',
-            borderRadius: 999,
-            padding: '6px 14px',
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-        >
-          ▶ Demo Mode
-        </div>
-      )}
-
-      <div style={sheet}>
-        {/* Opponent strip: progress only, never a precise location. */}
-        {view.opponents.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-            {view.opponents.map((o) => (
-              <span key={o.playerId} className="badge">
-                {o.name} · {o.checkpointIndex}/{o.totalCheckpoints || '?'} · {o.xp} XP
-                {o.hintsUsed > 0 ? ' 💡' : ''}
-              </span>
-            ))}
-          </div>
-        )}
+      <div className="sheet">
+        {/* Progress + opponents, always on screen. Opponent data is progress
+            only — never a precise location, not even hidden in the payload. */}
+        <ProgressBar
+          index={view.checkpointIndex}
+          total={view.totalCheckpoints}
+          xp={view.xp}
+          opponents={view.opponents.map((o) => ({
+            playerId: o.playerId,
+            name: o.name,
+            checkpointIndex: o.checkpointIndex,
+            totalCheckpoints: o.totalCheckpoints,
+          }))}
+          notice={location.source === 'demo' ? '▶ Demo Mode' : undefined}
+        />
 
         {!view.checkpoint ? (
           <p className="muted">Waiting for your first clue…</p>
@@ -382,59 +414,93 @@ export default function RacePage() {
               }}
             />
 
+            {/* A rejection must always name the way out. */}
             {view.lastMessage && (
-              <p style={{ fontSize: 14, color: 'var(--warn)' }}>{view.lastMessage}</p>
+              <div className="card" style={{ borderColor: 'var(--pink)', marginTop: 14 }}>
+                <p style={{ margin: '0 0 10px', fontSize: 15 }}>{view.lastMessage}</p>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <span className="pill pill-cyan">Retake the photo above</span>
+                  {!view.hint && (
+                    <button
+                      className="btn btn-ghost"
+                      style={{ minHeight: 40, fontSize: 14, padding: '0 14px' }}
+                      onClick={() => view.checkpoint && requestHint(view.checkpoint.id)}
+                    >
+                      Need a hint?
+                    </button>
+                  )}
+                </div>
+              </div>
             )}
-            {view.hint && <p style={{ color: 'var(--warn)', fontSize: 14 }}>💡 {view.hint}</p>}
+            {view.hint && (
+              <p style={{ color: 'var(--yellow)', fontSize: 15 }}>💡 {view.hint}</p>
+            )}
 
-            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            {/* ONE primary action, full width. */}
+            <button
+              className="btn btn-lime btn-block"
+              style={{ marginTop: 16, minHeight: 68, fontSize: 20 }}
+              onClick={handleSubmit}
+              disabled={!image || !answer.trim() || submitting}
+            >
+              {submitting
+                ? 'Verifying…'
+                : image && answer.trim()
+                  ? 'Submit proof'
+                  : 'Add a photo and an answer'}
+            </button>
+
+            {!view.lastMessage && (
               <button
-                className="btn"
+                className="btn btn-ghost btn-block"
+                style={{ marginTop: 10 }}
                 onClick={() => view.checkpoint && requestHint(view.checkpoint.id)}
                 disabled={submitting}
               >
-                Hint
+                Need a hint? (−20 XP)
               </button>
-              <button
-                className="btn primary"
-                style={{ flex: 1 }}
-                onClick={handleSubmit}
-                disabled={!image || !answer.trim() || submitting}
-              >
-                {submitting ? 'Verifying…' : 'Submit'}
-              </button>
-            </div>
+            )}
           </>
         ) : (
           <>
-            <p className="muted" style={{ margin: '0 0 6px', fontSize: 12, letterSpacing: '0.08em' }}>
-              CLUE {view.checkpointIndex + 1} OF {view.totalCheckpoints || '?'}
-            </p>
-            <p style={{ fontSize: 17, lineHeight: 1.55, margin: '0 0 10px' }}>
+            <p
+              data-testid="clue"
+              style={{ fontSize: 19, lineHeight: 1.5, fontWeight: 600, margin: '0 0 10px' }}
+            >
               {view.checkpoint.clue}
             </p>
             <p className="muted" style={{ fontSize: 14, marginTop: 0 }}>
               {Number.isFinite(distance) ? `${Math.round(distance)} m away` : 'Locating…'}
             </p>
-            {view.hint && <p style={{ color: 'var(--warn)', fontSize: 14 }}>💡 {view.hint}</p>}
-            <div style={{ display: 'flex', gap: 8 }}>
+            {view.hint && (
+              <p style={{ color: 'var(--yellow)', fontSize: 15 }}>💡 {view.hint}</p>
+            )}
+
+            {location.source === 'demo' && target ? (
               <button
-                className="btn"
-                onClick={() => view.checkpoint && requestHint(view.checkpoint.id)}
+                className="btn btn-cyan btn-block"
+                style={{ minHeight: 62, fontSize: 19 }}
+                onClick={() => location.walkTo(target)}
               >
-                Hint (−20 XP)
+                ▶ Walk there
               </button>
-              {location.source === 'demo' && target && (
-                <button className="btn" style={{ flex: 1 }} onClick={() => location.walkTo(target)}>
-                  ▶ Walk there
-                </button>
-              )}
-              {location.source !== 'demo' && (
-                <button className="btn" style={{ flex: 1 }} onClick={() => location.enableDemoMode()}>
-                  Demo Mode
-                </button>
-              )}
-            </div>
+            ) : (
+              /* GPS is the real thing, but a stuck player is never stranded. */
+              <button
+                className="btn btn-ghost btn-block"
+                onClick={() => location.enableDemoMode()}
+              >
+                Use demo location instead
+              </button>
+            )}
+
+            <button
+              className="btn btn-ghost btn-block"
+              style={{ marginTop: 10 }}
+              onClick={() => view.checkpoint && requestHint(view.checkpoint.id)}
+            >
+              Need a hint? (−20 XP)
+            </button>
           </>
         )}
       </div>

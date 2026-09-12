@@ -101,7 +101,16 @@ interface RawBundle {
   checkpoints?: Checkpoint[] | Record<string, Checkpoint>;
 }
 
-function normalize(raw: RawBundle): HuntBundle | null {
+/**
+ * Validate and shape a raw payload into a playable bundle.
+ *
+ * Exported because generated hunts arrive the same way published ones do — as
+ * `{hunt, routes, checkpoints}` over HTTP — and must clear the same
+ * referential-integrity check before anyone walks them. A generated hunt whose
+ * route points at a missing checkpoint would break mid-run, which is far worse
+ * than refusing it here.
+ */
+export function normalizeBundle(raw: RawBundle): HuntBundle | null {
   const hunt = raw.hunt ?? raw.hunts?.[0];
   const routes = raw.routes;
   if (!hunt || !routes?.length || !raw.checkpoints) return null;
@@ -147,7 +156,7 @@ function readCreatorPreview(): HuntBundle | null {
   try {
     const raw = window.localStorage.getItem(CREATOR_PREVIEW_KEY);
     if (!raw) return null;
-    const normalized = normalize(JSON.parse(raw) as RawBundle);
+    const normalized = normalizeBundle(JSON.parse(raw) as RawBundle);
     if (!normalized) {
       console.error('[hunt-data] creator preview failed validation — ignoring it.');
       return null;
@@ -182,7 +191,7 @@ export async function loadHuntBundle(): Promise<HuntBundle> {
   try {
     const res = await fetch('/hunts/pittsburgh.json', { cache: 'no-store' });
     if (res.ok) {
-      const normalized = normalize((await res.json()) as RawBundle);
+      const normalized = normalizeBundle((await res.json()) as RawBundle);
       if (normalized) {
         cached = normalized;
         return cached;

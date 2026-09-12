@@ -43,6 +43,8 @@ import {
 } from '@/lib/creatorDraft';
 import { validateDraft } from '@/lib/creatorValidation';
 import { CREATOR_PREVIEW_KEY, clearCreatorPreview } from '@/lib/huntData';
+import BackButton from '@/components/BackButton';
+import LoadingPanel from '@/components/LoadingPanel';
 import CheckpointForm from '@/components/creator/CheckpointForm';
 import RouteEditor from '@/components/creator/RouteEditor';
 import ValidationPanel from '@/components/creator/ValidationPanel';
@@ -334,8 +336,15 @@ export default function CreatorPage() {
 
   if (!draft || !report) {
     return (
-      <main className="wrap">
-        <p className="muted">Loading creator…</p>
+      <main className="wrap stack">
+        <div>
+          <BackButton label="Home" />
+        </div>
+        <LoadingPanel
+          what="Loading the editor"
+          timeoutMs={10_000}
+          onRetry={() => window.location.reload()}
+        />
       </main>
     );
   }
@@ -353,6 +362,10 @@ export default function CreatorPage() {
           padding: '10px 12px',
         }}
       >
+        {/* Top-left, same as every other screen. The editor is a full-bleed
+            three-pane layout with no other way back to the app. */}
+        <BackButton label="Home" />
+
         <h1 style={{ fontSize: 18, margin: 0, marginRight: 4 }}>
           Creator <span className="muted" style={{ fontWeight: 400, fontSize: 13 }}>· internal tool</span>
         </h1>

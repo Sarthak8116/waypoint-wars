@@ -103,7 +103,7 @@ async function main() {
     // content; the creator overflowed by 30px that way. Invisible to every
     // other check in this repo.
     console.log('\nhorizontal overflow @430px');
-    for (const path of ['/', '/play', '/demo', '/lobby', '/creator']) {
+    for (const path of ['/', '/play?demo=1', '/demo', '/lobby', '/creator']) {
       const { page, context } = await openPage(browser, path);
       await page.waitForTimeout(1200);
       const o = await page.evaluate(() => ({
@@ -120,8 +120,20 @@ async function main() {
       const { page, context, errors } = await openPage(browser, '/');
       const title = await page.title();
       check('home renders', (await page.locator('h1').count()) > 0, title);
+      // The landing page leads with what a PLAYER can do. Diagnostics moved
+      // behind a toggle, so assert the CTAs first and the pills second.
+      check(
+        'join-a-hunt CTA present',
+        (await page.locator('button:has-text("Join a hunt")').count()) > 0,
+      );
+      check(
+        'one-click demo CTA present',
+        (await page.locator('a:has-text("Start Pittsburgh demo")').count()) > 0,
+      );
+      await page.locator('button:has-text("Status")').click().catch(() => {});
+      await page.waitForTimeout(1500);
       const badges = await page.locator('.pill').allTextContents();
-      check('integration pills rendered', badges.length > 0, badges.join(' · ').slice(0, 80));
+      check('integration pills rendered behind Status', badges.length > 0, badges.join(' · ').slice(0, 80));
       check('no page errors', errors.length === 0, errors[0] ?? '');
       await shot(page, '1-home');
       await context.close();
@@ -148,9 +160,9 @@ async function main() {
     }
 
     // --- the solo hunt: map + PHASER -------------------------------------
-    console.log('\n/play');
+    console.log('\n/play?demo=1');
     {
-      const { page, context, errors } = await openPage(browser, '/play');
+      const { page, context, errors } = await openPage(browser, '/play?demo=1');
 
       // The route is picked at random, so wait for whichever route label lands.
       await page.waitForSelector('button:has-text("Start hunt")', { timeout: 20_000 }).catch(() => {});
@@ -172,8 +184,11 @@ async function main() {
         after.map((c) => `${c.w}x${c.h}`).join(' | '),
       );
 
-      const clueVisible = await page.locator('text=/CLUE 1 OF/i').count();
-      check('a clue is shown after starting', clueVisible > 0);
+      // Progress is now a persistent React strip ("Checkpoint 1 of 3") rather
+      // than a per-sheet "CLUE 1 OF 3" label, so it must be visible on every
+      // in-play screen — that is the point of moving it.
+      const progressVisible = await page.locator('text=/Checkpoint 1 of/i').count();
+      check('progress is shown after starting', progressVisible > 0);
 
       check('no page errors', errors.length === 0, errors.slice(0, 2).join(' ; '));
       await shot(page, '3-play-hud');

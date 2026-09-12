@@ -16,7 +16,12 @@ import { GameBridge, type GameHandle } from '@ww/game';
 import { loadHuntBundle, routeCheckpoints, type HuntBundle } from '@/lib/huntData';
 import { useLocation } from '@/lib/useLocation';
 import { useSoloHunt } from '@/lib/useSoloHunt';
+import { isDemoMode } from '@/lib/demoMode';
 import PhotoCapture from '@/components/PhotoCapture';
+import BackButton from '@/components/BackButton';
+import LocationGate from '@/components/LocationGate';
+import LoadingPanel from '@/components/LoadingPanel';
+import ProgressBar from '@/components/ProgressBar';
 
 // MapLibre touches `window` at module scope.
 const HuntMap = dynamic(() => import('@/components/HuntMap'), { ssr: false });
@@ -29,28 +34,67 @@ const TRAIL_SAMPLE_MS = 12_000;
 export default function PlayPage() {
   const [bundle, setBundle] = useState<HuntBundle | null>(null);
   const [routeId, setRouteId] = useState<string | null>(null);
+  const [demo, setDemo] = useState(false);
+  /** True until we know whether this is the demo path or the GPS path. */
+  const [booting, setBooting] = useState(true);
 
-  useEffect(() => {
-    void loadHuntBundle().then((b) => {
-      setBundle(b);
-      // Solo players get a route at random, same as multiplayer assignment.
-      const pick = b.routes[Math.floor(Math.random() * b.routes.length)];
-      setRouteId(pick?.id ?? null);
-    });
+  const begin = useCallback((b: HuntBundle) => {
+    setBundle(b);
+    // Solo players draw a route at random, same as multiplayer assignment.
+    const pick = b.routes[Math.floor(Math.random() * b.routes.length)];
+    setRouteId(pick?.id ?? null);
   }, []);
 
-  if (!bundle || !routeId) {
+  /**
+   * The judge path. `?demo=1` skips the location gate entirely: seeded hunt,
+   * simulated walking, no permission prompt and no dependency on the room
+   * server. Nobody should have to grant GPS to see the product work.
+   *
+   * Read in an effect rather than at render because `window` does not exist
+   * during the server render.
+   */
+  useEffect(() => {
+    if (!isDemoMode()) {
+      setBooting(false);
+      return;
+    }
+    setDemo(true);
+    let cancelled = false;
+    void loadHuntBundle().then((b) => {
+      if (cancelled) return;
+      begin(b);
+      setBooting(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [begin]);
+
+  if (booting) {
     return (
-      <main className="wrap">
-        <p className="muted">Loading hunt…</p>
+      <main className="wrap stack">
+        <div>
+          <BackButton label="Home" />
+        </div>
+        <LoadingPanel what="Loading the Pittsburgh hunt" timeoutMs={10_000} />
       </main>
     );
   }
 
-  return <SoloHunt bundle={bundle} routeId={routeId} />;
+  if (!bundle || !routeId) return <LocationGate onReady={begin} />;
+  return <SoloHunt bundle={bundle} routeId={routeId} demo={demo} />;
 }
 
-function SoloHunt({ bundle, routeId }: { bundle: HuntBundle; routeId: string }) {
+function SoloHunt({
+  bundle,
+  routeId,
+  demo,
+}: {
+  bundle: HuntBundle;
+  routeId: string;
+  /** Arrived via ?demo=1 — start in simulated movement, skip the GPS ask. */
+  demo: boolean;
+}) {
   const checkpoints = useMemo(() => routeCheckpoints(bundle, routeId), [bundle, routeId]);
   const route = bundle.routes.find((r) => r.id === routeId);
 
@@ -63,6 +107,7 @@ function SoloHunt({ bundle, routeId }: { bundle: HuntBundle; routeId: string }) 
       ? // Start ~250m short of the first stop so there is a visible walk.
         { latitude: firstCheckpoint.latitude - 0.0022, longitude: firstCheckpoint.longitude - 0.0012 }
       : { latitude: 40.4406, longitude: -80.0045 },
+    initialSource: demo ? 'demo' : 'gps',
   });
 
   const [trail, setTrail] = useState<LocationSample[]>([]);
@@ -207,13 +252,11 @@ function SoloHunt({ bundle, routeId }: { bundle: HuntBundle; routeId: string }) 
         />
       </div>
 
+      {/* Leaving mid-hunt loses the run, so confirm. */}
+      <BackButton floating label="Quit" confirm="Quit? Progress is lost" />
+
       {/* Phaser overlay */}
       <div ref={hudRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
-
-      {bundle.isFallback && (
-        <Banner tone="warn">⚠ Placeholder content</Banner>
-      )}
-      {location.source === 'demo' && <Banner tone="info">▶ Demo Mode</Banner>}
 
       <SoloPanel
         hunt={hunt}
@@ -228,22 +271,31 @@ function SoloHunt({ bundle, routeId }: { bundle: HuntBundle; routeId: string }) 
         onStart={handleStart}
         onSubmit={handleSubmit}
         onAdvance={handleAdvance}
+        notice={
+          bundle.isFallback
+            ? { text: '⚠ Placeholder content', tone: 'warn' as const }
+            : location.source === 'demo'
+              ? { text: '▶ Demo Mode', tone: 'info' as const }
+              : null
+        }
       />
     </div>
   );
 }
 
-function Banner({ tone, children }: { tone: 'warn' | 'info'; children: React.ReactNode }) {
+/** The progress strip every in-play sheet opens with. */
+function panelProgress(props: {
+  hunt: HuntApi;
+  notice: { text: string; tone: 'warn' | 'info' } | null;
+}) {
   return (
-    <div className="hud" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20 }}>
-      {/* Three columns: the Phaser HUD owns left and right, this owns centre.
-          Grid + nowrap pills is what makes collision structurally impossible. */}
-      <span />
-      <span className="hud-center">
-        <span className={`pill ${tone === 'warn' ? 'pill-yellow' : 'pill-cyan'}`}>{children}</span>
-      </span>
-      <span />
-    </div>
+    <ProgressBar
+      index={props.hunt.state.activeIndex}
+      total={props.hunt.totalCheckpoints}
+      xp={props.hunt.state.totalXp}
+      notice={props.notice?.text}
+      noticeTone={props.notice?.tone}
+    />
   );
 }
 
@@ -263,6 +315,7 @@ function SoloPanel(props: {
   onStart: () => void;
   onSubmit: () => void;
   onAdvance: () => void;
+  notice: { text: string; tone: 'warn' | 'info' } | null;
 }) {
   const { hunt, location } = props;
   const { state, activeCheckpoint, lastOutcome, instruction, hintText, verifying } = hunt;
@@ -280,11 +333,21 @@ function SoloPanel(props: {
           ever see one clue at a time.
         </p>
 
-        <button className="btn btn-pink btn-block" onClick={props.onStart}>
+        <button
+          className="btn btn-pink btn-block"
+          style={{ minHeight: 68, fontSize: 20 }}
+          onClick={props.onStart}
+        >
           Start hunt
         </button>
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+        <p className="dim" style={{ fontSize: 14, textAlign: 'center', margin: '10px 0 0' }}>
+          {location.source === 'demo'
+            ? 'Demo Mode — movement is simulated.'
+            : 'Using real GPS.'}
+        </p>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
           <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => location.startGps()}>
             Real GPS
           </button>
@@ -297,10 +360,19 @@ function SoloPanel(props: {
           </button>
         </div>
 
+        {/* Permission denied is the single most common blocker. Name the exit. */}
         {location.error && (
-          <p style={{ color: 'var(--pink)', fontSize: 14, marginTop: 12, marginBottom: 0 }}>
-            {location.error}
-          </p>
+          <div className="card" style={{ borderColor: 'var(--pink)', marginTop: 14 }}>
+            <p style={{ margin: '0 0 12px', fontSize: 15, color: 'var(--pink)' }}>
+              {location.error}
+            </p>
+            <button
+              className="btn btn-lime btn-block"
+              onClick={() => location.enableDemoMode()}
+            >
+              Use demo location
+            </button>
+          </div>
         )}
       </div>
     );
@@ -310,20 +382,89 @@ function SoloPanel(props: {
   // REWARD REGISTER: light surface, full-bleed accent hero.
   if (state.phase === 'FINISHED') {
     return (
-      <div className="sheet sheet-light">
+      <div className="sheet sheet-light" style={{ maxHeight: '88dvh' }}>
         <div className="hero hero-lime">
           <p className="label" style={{ marginBottom: 6 }}>
             Hunt complete
           </p>
-          <p className="display" style={{ fontSize: 52 }}>
-            {state.totalXp} XP
+          <p className="display" style={{ fontSize: 68, lineHeight: 0.9 }}>
+            {state.totalXp}
+          </p>
+          <p className="label" style={{ marginTop: 4, marginBottom: 0 }}>
+            total XP
           </p>
         </div>
-        <p style={{ fontSize: 17, color: 'var(--ink-body)' }}>
-          {state.reveals.length} historical discoveries on the {props.route}. The other
-          routes uncovered entirely different ones.
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: 10,
+            margin: '4px 0 16px',
+            textAlign: 'center',
+          }}
+        >
+          {(
+            [
+              [String(hunt.totalCheckpoints), 'checkpoints'],
+              [String(state.reveals.length), 'discoveries'],
+              [props.route, 'your route'],
+            ] as const
+          ).map(([value, label]) => (
+            <div key={label}>
+              <p
+                style={{
+                  margin: 0,
+                  fontWeight: 900,
+                  fontSize: 22,
+                  color: 'var(--ink)',
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {value}
+              </p>
+              <p className="label" style={{ margin: 0, color: 'var(--ink-body)', opacity: 0.7 }}>
+                {label}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* What they actually found, in order. This is the souvenir. */}
+        {state.reveals.length > 0 && (
+          <div style={{ marginBottom: 18 }}>
+            {state.reveals.map((r, i) => (
+              <div
+                key={`${r.name}-${i}`}
+                style={{
+                  display: 'flex',
+                  gap: 12,
+                  padding: '10px 0',
+                  borderTop: i === 0 ? 'none' : '2px solid rgba(23,16,67,0.12)',
+                }}
+              >
+                <span
+                  className="mono"
+                  style={{ fontWeight: 900, color: 'var(--ink-body)', opacity: 0.5 }}
+                >
+                  {i + 1}
+                </span>
+                <p style={{ margin: 0, color: 'var(--ink)', fontWeight: 700 }}>{r.name}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p style={{ fontSize: 16, color: 'var(--ink-body)' }}>
+          Everyone finished in the same place. Nobody walked the same way there.
         </p>
-        <a className="btn btn-cyan btn-block" href="/demo">
+
+        {/* Replay belongs HERE — at the end of a run, not on the landing page. */}
+        <a
+          className="btn btn-cyan btn-block"
+          href="/demo"
+          style={{ minHeight: 64, fontSize: 19 }}
+        >
           Watch the replay
         </a>
         <a
@@ -390,8 +531,13 @@ function SoloPanel(props: {
 
   // ---------------------------------------------------------------- arrived
   if (props.withinRadius) {
+    const rejected = lastOutcome?.outcome === 'rejected';
+    const ready = Boolean(props.image) && props.answer.trim().length > 0;
+
     return (
       <div className="sheet">
+        {panelProgress(props)}
+
         <span className="pill pill-lime">You&apos;re here</span>
 
         <h3 style={{ margin: '12px 0 6px' }}>{activeCheckpoint.observationQuestion}</h3>
@@ -426,10 +572,29 @@ function SoloPanel(props: {
           placeholder="Your answer"
         />
 
-        {lastOutcome?.outcome === 'rejected' && (
-          <p style={{ color: 'var(--pink)', fontSize: 15, marginTop: 12, marginBottom: 0 }}>
-            {lastOutcome.message}
-          </p>
+        {/* A rejection is a dead end unless it names the way out. */}
+        {rejected && (
+          <div
+            className="card"
+            style={{ borderColor: 'var(--pink)', marginTop: 14, marginBottom: 0 }}
+          >
+            <p className="label" style={{ color: 'var(--pink)', marginBottom: 8 }}>
+              Not accepted
+            </p>
+            <p style={{ margin: '0 0 12px', fontSize: 15 }}>{lastOutcome?.message}</p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <span className="pill pill-cyan">Retake the photo above</span>
+              {!hintText && (
+                <button
+                  className="btn btn-ghost"
+                  style={{ minHeight: 40, fontSize: 14, padding: '0 14px' }}
+                  onClick={hunt.requestHint}
+                >
+                  Need a hint?
+                </button>
+              )}
+            </div>
+          </div>
         )}
 
         {hintText && (
@@ -438,23 +603,26 @@ function SoloPanel(props: {
           </p>
         )}
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+        {/* ONE primary action, full width, bottom of the sheet. */}
+        <button
+          className="btn btn-lime btn-block"
+          style={{ marginTop: 16, minHeight: 68, fontSize: 20 }}
+          onClick={props.onSubmit}
+          disabled={!ready || verifying}
+        >
+          {verifying ? 'Verifying…' : ready ? 'Submit proof' : 'Add a photo and an answer'}
+        </button>
+
+        {!rejected && (
           <button
-            className="btn btn-ghost"
+            className="btn btn-ghost btn-block"
+            style={{ marginTop: 10 }}
             onClick={hintText ? hunt.requestDeeperHint : hunt.requestHint}
             disabled={verifying || (hintText !== null && !activeCheckpoint.hints?.[1])}
           >
-            Hint
+            Need a hint? (−20 XP)
           </button>
-          <button
-            className="btn btn-lime"
-            style={{ flex: 1 }}
-            onClick={props.onSubmit}
-            disabled={!props.image || !props.answer.trim() || verifying}
-          >
-            {verifying ? 'Verifying…' : 'Submit'}
-          </button>
-        </div>
+        )}
       </div>
     );
   }
@@ -462,12 +630,13 @@ function SoloPanel(props: {
   // -------------------------------------------------------------- navigating
   return (
     <div className="sheet">
-      <p className="label dim" style={{ marginBottom: 10 }}>
-        Clue {state.activeIndex + 1} of {hunt.totalCheckpoints}
-      </p>
+      {panelProgress(props)}
 
       {/* The clue is the best writing in the product. Give it room. */}
-      <p style={{ fontSize: 19, lineHeight: 1.5, fontWeight: 600, marginBottom: 14 }}>
+      <p
+        data-testid="clue"
+        style={{ fontSize: 19, lineHeight: 1.5, fontWeight: 600, marginBottom: 14 }}
+      >
         {activeCheckpoint.clue}
       </p>
 
@@ -479,20 +648,32 @@ function SoloPanel(props: {
         <p style={{ color: 'var(--yellow)', fontSize: 15 }}>💡 {hintText}</p>
       )}
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
-        <button className="btn btn-ghost" onClick={hintText ? hunt.requestDeeperHint : hunt.requestHint}>
-          Hint −20
+      {location.source === 'demo' ? (
+        <button
+          className="btn btn-cyan btn-block"
+          style={{ marginTop: 6, minHeight: 62, fontSize: 19 }}
+          onClick={() => location.walkTo(activeCheckpoint)}
+        >
+          ▶ Walk there
         </button>
-        {location.source === 'demo' && (
-          <button
-            className="btn btn-cyan"
-            style={{ flex: 1 }}
-            onClick={() => location.walkTo(activeCheckpoint)}
-          >
-            ▶ Walk there
-          </button>
-        )}
-      </div>
+      ) : (
+        /* GPS is the real thing, but a stuck player must never be stranded. */
+        <button
+          className="btn btn-ghost btn-block"
+          style={{ marginTop: 6 }}
+          onClick={() => location.enableDemoMode()}
+        >
+          Use demo location instead
+        </button>
+      )}
+
+      <button
+        className="btn btn-ghost btn-block"
+        style={{ marginTop: 10 }}
+        onClick={hintText ? hunt.requestDeeperHint : hunt.requestHint}
+      >
+        Need a hint? (−20 XP)
+      </button>
     </div>
   );
 }

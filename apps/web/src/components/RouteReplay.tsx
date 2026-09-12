@@ -44,6 +44,8 @@ export interface ReplayPlayer {
 
 export interface RouteReplayProps {
   players: ReplayPlayer[];
+  /** The shared gathering point, drawn once so the split is legible. */
+  start?: LatLng & { name: string };
   /** Total hunt duration in ms; the scrubber spans this. */
   durationMs: number;
   onDone?: () => void;
@@ -51,8 +53,14 @@ export interface RouteReplayProps {
 
 const SPEEDS = [1, 2, 4] as const;
 
-/** Replay compresses the whole hunt into this many seconds at 1x. */
-const REPLAY_BASE_SECONDS = 30;
+/**
+ * Seconds the whole hunt takes to replay at 1x.
+ *
+ * 30s was too fast to follow — the dots crossed Downtown before anyone could
+ * read what was happening. 75s at 1x gives the eye time to see three routes
+ * diverge and converge, and 2x/4x are there for anyone who wants it quicker.
+ */
+const REPLAY_BASE_SECONDS = 75;
 
 const OSM_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -124,7 +132,7 @@ function positionAt(path: ReplayPlayer['path'], t: number): LatLng | null {
   return last;
 }
 
-export default function RouteReplay({ players, durationMs, onDone }: RouteReplayProps) {
+export default function RouteReplay({ players, durationMs, onDone, start }: RouteReplayProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const readyRef = useRef(false);
@@ -134,7 +142,20 @@ export default function RouteReplay({ players, durationMs, onDone }: RouteReplay
   const [elapsed, setElapsed] = useState(0);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
   const [playing, setPlaying] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [discoveries, setDiscoveries] = useState<Array<{ player: string; name: string; reveal: string }>>([]);
+
+  /**
+   * XP awards that are currently animating.
+   *
+   * Anchored to the checkpoint's screen position and re-projected every frame,
+   * so a pop stays attached to the place it was earned while the map pans.
+   * Keyed by player+checkpoint so a replay restart can fire them again.
+   */
+  const [pops, setPops] = useState<
+    Array<{ key: string; lng: number; lat: number; xp: number; color: string; bornAt: number }>
+  >([]);
+  const firedPops = useRef<Set<string>>(new Set());
 
   // Refs so the animation loop reads fresh values without re-subscribing.
   const speedRef = useRef(speed);
@@ -188,6 +209,34 @@ export default function RouteReplay({ players, durationMs, onDone }: RouteReplay
           },
         });
 
+        /**
+         * Name every monument as it is reached.
+         *
+         * The whole argument for asymmetric routes is that players see
+         * DIFFERENT places — which is invisible if the map only shows
+         * anonymous dots. Labelled in the route's own colour with a dark
+         * halo, so three sets of names stay attributable at a glance.
+         */
+        map.addLayer({
+          id: `labels-${p.id}`,
+          type: 'symbol',
+          source: `pins-${p.id}`,
+          layout: {
+            'text-field': ['get', 'name'],
+            'text-size': 12,
+            'text-offset': [0, 1.3],
+            'text-anchor': 'top',
+            'text-max-width': 9,
+            'text-allow-overlap': false,
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          },
+          paint: {
+            'text-color': p.color,
+            'text-halo-color': '#1a1147',
+            'text-halo-width': 2.2,
+          },
+        });
+
         map.addSource(`head-${p.id}`, { type: 'geojson', data: empty });
         map.addLayer({
           id: `head-${p.id}`,
@@ -202,6 +251,41 @@ export default function RouteReplay({ players, durationMs, onDone }: RouteReplay
         });
       });
 
+      // The shared start: one marker, drawn under everything else.
+      map.addSource('start', { type: 'geojson', data: empty });
+      map.addLayer({
+        id: 'start-ring',
+        type: 'circle',
+        source: 'start',
+        paint: {
+          'circle-radius': 13,
+          'circle-color': 'rgba(255,210,61,0.18)',
+          'circle-stroke-color': '#ffd23d',
+          'circle-stroke-width': 3,
+        },
+      });
+      map.addLayer({
+        id: 'start-label',
+        type: 'symbol',
+        source: 'start',
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-size': 12,
+          'text-offset': [0, -1.6],
+          'text-anchor': 'bottom',
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+        },
+        paint: { 'text-color': '#ffd23d', 'text-halo-color': '#1a1147', 'text-halo-width': 2.2 },
+      });
+
+      if (start) {
+        (map.getSource('start') as maplibregl.GeoJSONSource | undefined)?.setData({
+          type: 'Feature',
+          properties: { name: `START · ${start.name}` },
+          geometry: { type: 'Point', coordinates: [start.longitude, start.latitude] },
+        } as GeoJSONObject);
+      }
+
       // Frame every path so all three routes are visible from the first frame.
       const all = players.flatMap((p) => p.path);
       if (all.length) {
@@ -212,7 +296,11 @@ export default function RouteReplay({ players, durationMs, onDone }: RouteReplay
             [all[0]!.longitude, all[0]!.latitude],
           ),
         );
-        map.fitBounds(bounds, { padding: 70, duration: 0 });
+        // Pad the bottom for the sheet so no route hides behind it.
+        map.fitBounds(bounds, {
+          padding: { top: 70, left: 40, right: 40, bottom: 300 },
+          duration: 0,
+        });
       }
 
       readyRef.current = true;
@@ -321,7 +409,47 @@ export default function RouteReplay({ players, durationMs, onDone }: RouteReplay
   const restart = useCallback(() => {
     setElapsed(0);
     setPlaying(true);
+    firedPops.current.clear();
+    setPops([]);
   }, []);
+
+  /** POP_MS must stay under a second — see the motion rules. */
+  const POP_MS = 900;
+
+  // Fire an XP pop the moment a checkpoint is reached.
+  useEffect(() => {
+    const now = performance.now();
+    const fresh: typeof pops = [];
+
+    for (const p of players) {
+      for (const c of p.checkpoints) {
+        const key = `${p.id}:${c.name}:${c.atMs}`;
+        if (c.atMs <= elapsed && !firedPops.current.has(key)) {
+          firedPops.current.add(key);
+          fresh.push({
+            key,
+            lng: c.position.longitude,
+            lat: c.position.latitude,
+            xp: c.xpAwarded,
+            color: p.color,
+            bornAt: now,
+          });
+        }
+      }
+    }
+
+    if (fresh.length) setPops((prev) => [...prev, ...fresh]);
+  }, [elapsed, players]);
+
+  // Retire finished pops. Separate from firing so a re-render cannot drop one.
+  useEffect(() => {
+    if (pops.length === 0) return;
+    const id = setInterval(() => {
+      const now = performance.now();
+      setPops((prev) => prev.filter((x) => now - x.bornAt < POP_MS));
+    }, 120);
+    return () => clearInterval(id);
+  }, [pops.length]);
 
   const progressPct = durationMs > 0 ? (elapsed / durationMs) * 100 : 0;
   const xpAt = useMemo(
@@ -337,7 +465,52 @@ export default function RouteReplay({ players, durationMs, onDone }: RouteReplay
     <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column' }}>
       <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
 
-      <div className="sheet" style={{ maxHeight: '60dvh' }}>
+      {/* XP awards, anchored to the checkpoint that earned them. */}
+      {pops.map((pop) => {
+        const map = mapRef.current;
+        if (!map) return null;
+        const pt = map.project([pop.lng, pop.lat]);
+        return (
+          <div
+            key={pop.key}
+            style={{
+              position: 'absolute',
+              left: pt.x,
+              top: pt.y,
+              transform: 'translate(-50%, -100%)',
+              pointerEvents: 'none',
+              zIndex: 9,
+              background: pop.color,
+              color: '#1a1147',
+              borderRadius: 'var(--r-pill)',
+              padding: '5px 11px',
+              fontWeight: 800,
+              fontSize: 15,
+              whiteSpace: 'nowrap',
+              animation: 'xppop 900ms ease-out forwards',
+            }}
+          >
+            +{pop.xp} XP
+          </div>
+        );
+      })}
+
+      <div className="sheet" style={{ maxHeight: expanded ? '62dvh' : '34dvh' }}>
+        {/* The routes converging IS the pitch, so the map keeps most of the
+            screen by default and the detail is one tap away. */}
+        <button
+          className="btn btn-ghost"
+          onClick={() => setExpanded((v) => !v)}
+          style={{
+            width: '100%',
+            minHeight: 38,
+            marginBottom: 12,
+            fontSize: 13,
+            padding: 0,
+          }}
+        >
+          {expanded ? '▼ Hide details' : '▲ Discoveries & scores'}
+        </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
           <button className="btn btn-ghost" style={{ minWidth: 56, padding: 0 }} onClick={() => setPlaying((v) => !v)}>
             {playing ? '❚❚' : '▶'}

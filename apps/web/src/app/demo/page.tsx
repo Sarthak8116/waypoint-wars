@@ -16,6 +16,7 @@ import { loadHuntBundle, routeCheckpoints, type HuntBundle } from '@/lib/huntDat
 import { simulateRun } from '@/lib/simulateRun';
 import type { ReplayPlayer } from '@/components/RouteReplay';
 import { identityFor } from '@/lib/routeIdentity';
+import BackButton from '@/components/BackButton';
 
 const RouteReplay = dynamic(() => import('@/components/RouteReplay'), { ssr: false });
 
@@ -42,6 +43,15 @@ export default function DemoPage() {
 
       const run = simulateRun(checkpoints, {
         seed: 1000 + i * 77,
+        // Everyone walks out from the same gathering point.
+        ...(bundle.hunt.startLocation
+          ? {
+              start: {
+                latitude: bundle.hunt.startLocation.latitude,
+                longitude: bundle.hunt.startLocation.longitude,
+              },
+            }
+          : {}),
         pace: persona.pace,
         hintAt: persona.hintAt,
         missAt: persona.missAt,
@@ -100,7 +110,21 @@ export default function DemoPage() {
         </div>
       )}
 
-      <RouteReplay players={players} durationMs={durationMs} />
+      <BackButton floating label="Home" />
+
+      <RouteReplay
+        players={players}
+        durationMs={durationMs}
+        {...(bundle.hunt.startLocation
+          ? {
+              start: {
+                name: bundle.hunt.startLocation.name,
+                latitude: bundle.hunt.startLocation.latitude,
+                longitude: bundle.hunt.startLocation.longitude,
+              },
+            }
+          : {})}
+      />
     </>
   );
 }

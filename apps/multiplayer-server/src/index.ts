@@ -50,6 +50,7 @@ import { huntStore } from './hunt-store.js';
 import { initRepository, validateHuntBundle, type HuntRepository } from './persistence/index.js';
 import { verifySubmission } from '@ww/verification';
 import { generateHunt, PlacesError } from '@ww/content';
+import { haversineMeters } from '@ww/shared';
 import { getVerificationProvider } from './verification-provider.js';
 import { ensureSeeded } from './seed.js';
 import { HuntRoom } from './rooms/HuntRoom.js';
@@ -222,6 +223,79 @@ app.post('/api/verify', (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// Find a hunt near a player
+// ---------------------------------------------------------------------------
+
+/** 5 miles, the radius the user asked for. */
+const NEARBY_RADIUS_METERS = 8047;
+
+/**
+ * What can this player actually walk to from where they are standing?
+ *
+ * GET /api/hunts/nearby?lat=&lng=
+ *
+ * Returns published hunts whose START (or first checkpoint, for older content
+ * without one) is within five miles, nearest first. An empty list is a normal
+ * answer, not an error — it means the client should offer to generate one.
+ */
+app.get('/api/hunts/nearby', (req, res) => {
+  void (async () => {
+    const lat = Number(req.query['lat']);
+    const lng = Number(req.query['lng']);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      res.status(400).json({ error: 'lat and lng are required.' });
+      return;
+    }
+
+    try {
+      const listed = await repository.listHunts();
+      const here = { latitude: lat, longitude: lng };
+      const nearby: Array<{
+        huntId: string;
+        title: string;
+        city: string;
+        distanceMeters: number;
+        startName?: string;
+        routes: number;
+      }> = [];
+
+      for (const meta of listed) {
+        const bundle = await repository.getHuntBundle(meta.id);
+        if (!bundle?.hunt.published) continue;
+
+        // Anchor on the shared start; fall back to the first checkpoint of the
+        // first route for hunts authored before startLocation existed.
+        const anchor = bundle.hunt.startLocation
+          ? {
+              latitude: bundle.hunt.startLocation.latitude,
+              longitude: bundle.hunt.startLocation.longitude,
+            }
+          : bundle.checkpoints.find((c) => c.id === bundle.routes[0]?.checkpointIds[0]);
+        if (!anchor) continue;
+
+        const distanceMeters = Math.round(haversineMeters(here, anchor));
+        if (distanceMeters > NEARBY_RADIUS_METERS) continue;
+
+        nearby.push({
+          huntId: bundle.hunt.id,
+          title: bundle.hunt.title,
+          city: bundle.hunt.city,
+          distanceMeters,
+          ...(bundle.hunt.startLocation ? { startName: bundle.hunt.startLocation.name } : {}),
+          routes: bundle.routes.length,
+        });
+      }
+
+      nearby.sort((a, b) => a.distanceMeters - b.distanceMeters);
+      res.json({ hunts: nearby, radiusMeters: NEARBY_RADIUS_METERS });
+    } catch (err) {
+      console.error('[api] nearby lookup failed', err);
+      res.status(500).json({ error: 'Could not look up nearby hunts.' });
+    }
+  })();
+});
+
+// ---------------------------------------------------------------------------
 // Generate a hunt for anywhere
 // ---------------------------------------------------------------------------
 
@@ -243,19 +317,41 @@ app.post('/api/hunts/generate', (req, res) => {
   void (async () => {
     const body = req.body as Partial<{
       query: string;
+      latitude: number;
+      longitude: number;
       duration: string;
       routeCount: number;
       stopsPerRoute: number;
     }>;
 
-    if (typeof body?.query !== 'string' || body.query.trim().length < 2) {
-      res.status(400).json({ error: 'Tell me where — a city, a neighbourhood, a landmark.' });
+    /**
+     * Two ways in: a place NAME, or the player's own COORDINATES.
+     *
+     * The coordinate path matters — a player standing somewhere unnamed, or
+     * who does not know what their neighbourhood is called, can still get a
+     * hunt. Nominatim reverse-geocodes "lat,lng" perfectly well.
+     */
+    const hasCoords =
+      typeof body?.latitude === 'number' &&
+      typeof body?.longitude === 'number' &&
+      Number.isFinite(body.latitude) &&
+      Number.isFinite(body.longitude);
+
+    const query =
+      typeof body?.query === 'string' && body.query.trim().length >= 2
+        ? body.query.trim()
+        : hasCoords
+          ? `${body.latitude},${body.longitude}`
+          : '';
+
+    if (!query) {
+      res.status(400).json({ error: 'Tell me where — a city, a landmark, or your coordinates.' });
       return;
     }
 
     try {
       const generated = await generateHunt({
-        query: body.query.trim(),
+        query,
         ...(body.duration ? { duration: body.duration as never } : {}),
         ...(typeof body.routeCount === 'number' ? { routeCount: body.routeCount } : {}),
         ...(typeof body.stopsPerRoute === 'number' ? { stopsPerRoute: body.stopsPerRoute } : {}),

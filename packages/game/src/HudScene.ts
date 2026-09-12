@@ -55,6 +55,13 @@ import { COLORS, FONT, PAD, PLATE_ALPHA } from './theme.js';
 
 export const HUD_SCENE_KEY = 'ww-hud';
 
+/**
+ * Vertical space reserved at the top of the canvas for React's own chrome —
+ * the floating Back button (left) and any status pill (centre). Phaser never
+ * draws into this band.
+ */
+const TOP_INSET = 52;
+
 export interface HudSceneConfig {
   bridge: GameBridge;
   hitRegions: HitRegionRegistry;
@@ -470,17 +477,27 @@ export class HudScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
 
-    this.xpText.setPosition(PAD, PAD);
-    this.timerPlate.setPosition(w - PAD, PAD);
-    this.timerText.setPosition(w - PAD - 12, PAD + 6);
+    /**
+     * React owns the top strip.
+     *
+     * The floating Back button sits at (12, 12) with a 44px hit area, and the
+     * XP counter used to be drawn at (14, 14) — directly underneath it. The
+     * counter was unreadable and the button was hard to hit. Phaser starts
+     * below that band on both sides.
+     */
+    const top = PAD + TOP_INSET;
 
-    this.pipRow.setPosition(PAD, PAD + 46);
-    this.progressLabel.setPosition(PAD, PAD + 56);
+    this.xpText.setPosition(PAD, top);
+    this.timerPlate.setPosition(w - PAD, top);
+    this.timerText.setPosition(w - PAD - 12, top + 6);
+
+    this.pipRow.setPosition(PAD, top + 46);
+    this.progressLabel.setPosition(PAD, top + 56);
 
     this.verifyDot.setPosition(PAD + 8, h - PAD - 76);
     this.verifyLabel.setPosition(PAD + 24, h - PAD - 76);
 
-    this.opponentRows.setPosition(w - PAD - 160, PAD + 64);
+    this.opponentRows.setPosition(w - PAD - 160, top + 64);
     this.clueCard.setPosition(w / 2, h * 0.5);
 
     if (this.hintButton && this.hintPlate) {

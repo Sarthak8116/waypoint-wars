@@ -485,7 +485,11 @@ a {
   border-top: 3px solid var(--border);
   border-radius: var(--r-panel) var(--r-panel) 0 0;
   padding: 20px;
-  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  /* The primary action lives at the bottom of this sheet. env() alone puts it
+     flush against the iOS home indicator, where it is both hard to hit and
+     easy to trigger a system gesture instead. Clear the inset, then add a
+     thumb-sized margin on top of it. */
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
   max-height: 76dvh;
   overflow-y: auto;
 }
@@ -543,6 +547,27 @@ a {
   100% {
     transform: scale(1.7);
     opacity: 0;
+  }
+}
+
+/**
+ * XP award rising off a checkpoint.
+ *
+ * Rises and fades in under a second, per the motion rules — a celebration that
+ * outlasts the moment becomes an obstacle. No bounce, no confetti.
+ */
+@keyframes xppop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -100%) translateY(6px) scale(0.92);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -100%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -100%) translateY(-34px) scale(1);
   }
 }
 

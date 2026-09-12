@@ -20,6 +20,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import type { Checkpoint, Hunt, HuntDuration, Route } from '@ww/shared';
+import BackButton from '@/components/BackButton';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:2567';
 
@@ -151,6 +152,7 @@ export default function CreatePage() {
 
   return (
     <main className="wrap stack">
+      <div><BackButton label="Home" /></div>
       <div>
         <p className="label" style={{ color: 'var(--lime)', marginBottom: 10 }}>
           Anywhere on earth
@@ -212,7 +214,12 @@ export default function CreatePage() {
 
             <div>
               <p className="label dim" style={{ marginBottom: 8 }}>
-                How many routes
+                How many teams or players
+              </p>
+              {/* One route per team is the whole mechanic — but "routes" is our
+                  word, not the organiser's. They are thinking about people. */}
+              <p className="dim" style={{ fontSize: 13, margin: '-4px 0 8px' }}>
+                Each gets its own set of checkpoints.
               </p>
               <div style={{ display: 'flex', gap: 8 }}>
                 {[2, 3, 4].map((n) => (

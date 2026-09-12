@@ -29,6 +29,7 @@ import type { LatLng } from '@ww/shared';
 const USER_AGENT = 'WaypointWars/0.1 (scavenger hunt generator; contact via repo)';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
+const NOMINATIM_REVERSE = 'https://nominatim.openstreetmap.org/reverse';
 
 /**
  * Overpass mirrors, tried in order.
@@ -99,6 +100,43 @@ async function getJson(url: string, init: RequestInit = {}): Promise<unknown> {
  * Springfield is visible and correctable rather than silent.
  */
 export async function geocode(query: string): Promise<GeocodedPlace> {
+  /**
+   * "25.7742,-80.1936" is a coordinate, not a place name.
+   *
+   * A player standing somewhere unnamed — or who does not know what their
+   * neighbourhood is called — hands us their GPS fix. Nominatim's /search
+   * endpoint handles coordinate strings inconsistently; /reverse is the
+   * endpoint that exists for this, and it also gives back a human-readable
+   * name we can show them so they can tell whether we found the right spot.
+   */
+  const coords = query.trim().match(/^(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/);
+  if (coords) {
+    const latitude = Number(coords[1]);
+    const longitude = Number(coords[2]);
+    if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+      throw new PlacesError('Those coordinates are not on earth.', 'not-found');
+    }
+
+    const revUrl = `${NOMINATIM_REVERSE}?lat=${latitude}&lon=${longitude}&format=json&zoom=14`;
+    try {
+      const rev = (await getJson(revUrl)) as { display_name?: string };
+      return {
+        // The player's OWN fix is authoritative, not whatever the reverse
+        // lookup snapped to — they are standing where they are standing.
+        displayName: rev.display_name ?? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        latitude,
+        longitude,
+      };
+    } catch {
+      // A failed reverse lookup costs us only the pretty name.
+      return {
+        displayName: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        latitude,
+        longitude,
+      };
+    }
+  }
+
   const url = `${NOMINATIM}?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=0`;
   const data = (await getJson(url)) as Array<{ lat: string; lon: string; display_name: string }>;
 

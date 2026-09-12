@@ -35,6 +35,12 @@ export interface SimulateOptions {
   /** Deterministic per player, so a rehearsed demo replays identically. */
   seed: number;
   /**
+   * Where everyone gathers before splitting up. All players walk out from
+   * this single point, which is the shape of the real game and makes the
+   * "same start, different routes, same finish" story legible on the map.
+   */
+  start?: LatLng;
+  /**
    * How this player performs against the content's expected times.
    * 1.0 = exactly on pace, 0.8 = 20% faster, 1.25 = 25% slower.
    */
@@ -54,8 +60,24 @@ function rng(seed: number): () => number {
   };
 }
 
-/** Breadcrumb cadence, matching the live game's 12s sampling. */
-const SAMPLE_MS = 12_000;
+/**
+ * Sample cadence for the REPLAY path.
+ *
+ * The live game records a breadcrumb every 12s, which is the right rate for
+ * storage and completely wrong for animation: at that spacing the replay
+ * interpolates between distant points and the dot visibly snaps corner to
+ * corner. 2s gives a path smooth enough to read as walking.
+ */
+const SAMPLE_MS = 2_000;
+
+/**
+ * How far a leg bows off the straight line, as a fraction of its length.
+ *
+ * Real walking follows streets, so a perfectly straight line between two
+ * landmarks looks synthetic. A single consistent arc per leg reads as a route;
+ * the previous random per-sample jitter just looked like GPS noise.
+ */
+const ARC_FRACTION = 0.13;
 
 export function simulateRun(checkpoints: Checkpoint[], opts: SimulateOptions): SimulatedRun {
   const rand = rng(opts.seed);
@@ -69,32 +91,47 @@ export function simulateRun(checkpoints: Checkpoint[], opts: SimulateOptions): S
   let totalXp = 0;
   let hintsUsed = 0;
 
-  // Start a little short of the first checkpoint so there is a visible walk in.
   const first = checkpoints[0];
   if (!first) return { path, checkpoints: events, totalXp: 0, durationMs: 0, hintsUsed: 0 };
 
-  let from: LatLng = {
-    latitude: first.latitude - 0.0020 - rand() * 0.0008,
-    longitude: first.longitude - 0.0014 - rand() * 0.0008,
+  // EVERYONE STARTS IN THE SAME PLACE. Without a supplied start the players
+  // would each begin beside their own first checkpoint, which hides the whole
+  // "gather, split, converge" shape the product is built around.
+  let from: LatLng = opts.start ?? {
+    latitude: first.latitude - 0.002,
+    longitude: first.longitude - 0.0014,
   };
   path.push({ ...from, atMs: 0 });
 
   checkpoints.forEach((cp, index) => {
     const to: LatLng = { latitude: cp.latitude, longitude: cp.longitude };
 
-    // Jitter each leg so the three routes don't look mechanically identical.
+    // Vary each leg slightly so the three routes aren't mechanically identical.
     const legMs = cp.expectedCompletionSeconds * 1000 * opts.pace * (0.9 + rand() * 0.2);
-    const steps = Math.max(2, Math.round(legMs / SAMPLE_MS));
+    const steps = Math.max(6, Math.round(legMs / SAMPLE_MS));
+
+    /**
+     * Bow the leg into a single smooth arc, side chosen once per leg.
+     *
+     * The offset peaks at the midpoint and falls to zero at both ends, so the
+     * dot arrives exactly on the checkpoint. Perpendicular to the direction of
+     * travel, so it reads as going around a block rather than wandering.
+     */
+    const side = rand() < 0.5 ? -1 : 1;
+    const dLat = to.latitude - from.latitude;
+    const dLng = to.longitude - from.longitude;
+    const perpLat = -dLng;
+    const perpLng = dLat;
+    const bow = side * ARC_FRACTION * (0.6 + rand() * 0.8);
 
     for (let s = 1; s <= steps; s++) {
       const t = s / steps;
       const pos = lerpLatLng(from, to, t);
-      // Nudge intermediate samples off the straight line so the trail reads
-      // like someone following streets rather than a ruler.
-      const wobble = s === steps ? 0 : (rand() - 0.5) * 0.00035;
+      // sin gives a clean 0 -> peak -> 0 curve across the leg.
+      const swell = Math.sin(t * Math.PI) * bow;
       path.push({
-        latitude: pos.latitude + wobble,
-        longitude: pos.longitude + wobble * 0.7,
+        latitude: pos.latitude + perpLat * swell,
+        longitude: pos.longitude + perpLng * swell,
         atMs: Math.round(clock + legMs * t),
       });
     }
