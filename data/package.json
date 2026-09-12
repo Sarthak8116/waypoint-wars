@@ -1,0 +1,15 @@
+{
+  "name": "@ww/data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsx build-hunts.ts",
+    "validate": "tsx validate.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'lint: data ok'",
+    "test": "tsx build-hunts.ts && tsx validate.ts"
+  },
+  "dependencies": { "@ww/shared": "workspace:*" },
+  "devDependencies": { "tsx": "^4.19.2", "typescript": "^5.7.3" }
+}

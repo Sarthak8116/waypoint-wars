@@ -86,7 +86,14 @@ export interface Checkpoint {
 
   // --- Layer 1: the clue ---
   clue: string;
+  /** First-tier hint. Always present; equals `hints[0].text` when tiers exist. */
   hint: string;
+  /**
+   * Progressively more revealing hints, each with its own XP cost. Optional so
+   * hand-written content can supply just `hint`; the curated Pittsburgh seed
+   * supplies two tiers (a nudge, then a near-giveaway).
+   */
+  hints?: Array<{ text: string; costXp: number }>;
 
   // --- Layer 2: the challenge ---
   challengeKind: ChallengeKind;
@@ -98,6 +105,12 @@ export interface Checkpoint {
   landmarkDescription: string;
   /** Optional reference image path/URL for visual grounding. */
   referenceImageUrl?: string;
+  /**
+   * Known failure modes for this shot (bad angles, night, seasonal features),
+   * passed to Gemini so it lowers confidence rather than hard-failing an
+   * honest player. e.g. "never fail solely because the fountain is off".
+   */
+  confidenceConcerns?: string;
 
   // --- Layer 3: the reveal ---
   historicalReveal: string;
@@ -109,6 +122,16 @@ export interface Checkpoint {
   radiusMeters: number;
   baseXp: number;
   expectedCompletionSeconds: number;
+
+  // --- Optional production metadata (curated content) ---
+  /** One-sentence narration script for ElevenLabs. */
+  audioShort?: string;
+  /** Plain-language description of where this is, for creators and support. */
+  realWorldLocation?: string;
+  /** Terrain, traffic, seasonality warnings shown before the player sets off. */
+  accessibility?: string;
+  /** Stable id for the reference image asset used in visual grounding. */
+  referenceImageId?: string;
 }
 
 /** An ordered sequence of checkpoints ending at the shared destination. */

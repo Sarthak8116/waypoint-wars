@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Waypoint Wars — HUD mock harness</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: #f5f7fa;
+        background: #0b0f18;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+      }
+      @media (max-width: 760px) {
+        body { grid-template-columns: 1fr; grid-template-rows: 55vh 1fr; }
+      }
+
+      /* Stand-in for MapLibre. If the HUD is not transparent you will see it. */
+      #stage { position: relative; overflow: hidden; }
+      #fake-map {
+        position: absolute; inset: 0;
+        background:
+          repeating-linear-gradient(90deg, #263043 0 2px, transparent 2px 78px),
+          repeating-linear-gradient(0deg, #263043 0 2px, transparent 2px 78px),
+          radial-gradient(circle at 30% 40%, #2c4a3a 0 120px, transparent 121px),
+          linear-gradient(160deg, #16202f, #101725);
+      }
+      #fake-map .note {
+        position: absolute; left: 12px; bottom: 12px;
+        color: #6f7f95; font-size: 12px;
+      }
+      /* The overlay container. In the real app this sits above the map canvas. */
+      #hud { position: absolute; inset: 0; }
+
+      aside {
+        border-left: 1px solid #222c3d; padding: 12px; overflow-y: auto; background: #0d1220;
+      }
+      h1 { font-size: 14px; margin: 0 0 4px; }
+      p.sub { margin: 0 0 12px; color: #8c99ad; font-size: 12px; }
+      h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #8c99ad; margin: 16px 0 6px; }
+      button {
+        display: block; width: 100%; margin-bottom: 6px; padding: 8px 10px;
+        text-align: left; border-radius: 8px; cursor: pointer;
+        border: 1px solid #2a3350; background: #151d31; color: #dce4f0; font: inherit;
+      }
+      button:hover { border-color: #4cc2ff; }
+      button.alt { border-color: #3c4a2f; background: #1a2016; }
+      code { color: #ffd15c; font-size: 11px; }
+      #log { margin-top: 12px; font-size: 11px; color: #6f7f95; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <main id="stage">
+      <div id="fake-map"><span class="note">stand-in for MapLibre — the HUD above it must be transparent</span></div>
+      <div id="hud"></div>
+    </main>
+    <aside>
+      <h1>HUD mock harness</h1>
+      <p class="sub">
+        Every <code>GameEvent</code> has a button. Nothing here is a real game —
+        the HUD holds no state, so firing events in any order is legal.
+      </p>
+      <h2>Events</h2>
+      <div id="event-buttons"></div>
+      <h2>Scenes &amp; lifecycle</h2>
+      <div id="scene-buttons"></div>
+      <div id="log"></div>
+    </aside>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

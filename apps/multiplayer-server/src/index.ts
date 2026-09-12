@@ -9,12 +9,14 @@
 
 import 'dotenv/config';
 import http from 'node:http';
-import express from 'express';
+import express, { type Express } from 'express';
 import cors from 'cors';
 
 const PORT = Number(process.env.PORT ?? 2567);
 
-const app = express();
+// Explicit annotation: pnpm's nested layout makes the inferred Express type
+// unnameable across package boundaries (TS2742).
+const app: Express = express();
 
 app.use(cors());
 // Photo submissions are base64 data URLs, so the default 100kb limit is far too small.

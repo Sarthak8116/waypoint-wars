@@ -1,0 +1,757 @@
+{
+  "hunt": {
+    "id": "hunt_three_rivers_run",
+    "title": "Three Rivers Run",
+    "city": "Pittsburgh",
+    "theme": "mixed",
+    "duration": "city-quest",
+    "description": "Three asymmetric trails through Downtown Pittsburgh — rivers and founding, steel and money, arts and discovery — all converging at the Point where two rivers become a third.",
+    "finalDestination": {
+      "id": "final_point_fountain",
+      "name": "The Point — Confluence Fountain",
+      "latitude": 40.4417,
+      "longitude": -80.0093,
+      "clue": "Every trail ends where two rivers become a third. Reach the very tip of the Point, find the bronze medallion set in the stone, and mark your arrival together.",
+      "hint": "Walk to the farthest tip of Point State Park, past the fountain, to the confluence.",
+      "hints": [
+        {
+          "text": "Walk to the farthest tip of Point State Park, past the fountain, to the confluence.",
+          "costXp": -15
+        },
+        {
+          "text": "A large round bronze medallion is set into the stone at the tip — that's your marker.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "narrated-event",
+      "observationQuestion": "Two rivers meet here to form a third — name the river that begins at this point.",
+      "acceptedAnswers": [
+        "ohio",
+        "ohio river"
+      ],
+      "photoRequirement": "All three trails converge here. Stand at the tip of the Point where the rivers meet, find the bronze medallion set into the stone (the western end of the Great Allegheny Passage), and take one arrival photo — a team group shot, or a selfie with the confluence behind you. If the fountain's geyser is running, get it in frame for bonus flair.",
+      "landmarkDescription": "The tip of a point of land where two rivers join into one, open sky/water, park paving; ideally a round bronze medallion in the stone and/or a tall fountain geyser.",
+      "historicalReveal": "This is the Point — where the Allegheny and the Monongahela join to form the Ohio, the spot that made Pittsburgh worth fighting three empires over and the birthplace of the city. The 150-foot fountain, opened in 1974 (an idea Frank Lloyd Wright first floated in 1947), draws on water locals call the 'fourth river,' an aquifer beneath your feet. The bronze medallion marks Mile 0 — the western end of the 150-mile Great Allegheny Passage. Three rivers, three trails, one finish.",
+      "sources": [
+        {
+          "title": "PA DCNR",
+          "url": "https://www.dcnr.pa.gov/StateParks/FindAPark/PointStatePark/"
+        },
+        {
+          "title": "Pittsburgh Magazine"
+        },
+        {
+          "title": "Clio",
+          "url": "https://theclio.com/"
+        },
+        {
+          "title": "Great Allegheny Passage",
+          "url": "https://gaptrail.org/"
+        },
+        {
+          "title": "NPS",
+          "url": "https://www.nps.gov/"
+        }
+      ],
+      "radiusMeters": 40,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 540,
+      "confidenceConcerns": "Lower confidence if the water/confluence isn't visible, or if the shot is elsewhere in the park with no riverfront. Never fail solely because the fountain is off.",
+      "audioShort": "The Point, where the Allegheny and Monongahela form the Ohio — Pittsburgh's birthplace, its 150-foot fountain, and Mile 0 of the Great Allegheny Passage.",
+      "realWorldLocation": "Tip of Point State Park, at the Point Fountain / Great Allegheny Passage bronze terminus medallion",
+      "accessibility": "Paved, ADA-accessible park paths to the tip. Fountain is seasonal (off in winter and during maintenance). Open and exposed — wind and sun.",
+      "referenceImageId": "ref_point_fountain"
+    },
+    "routeIds": [
+      "route_confluence",
+      "route_foundry",
+      "route_marquee"
+    ],
+    "published": true
+  },
+  "routes": [
+    {
+      "id": "route_confluence",
+      "huntId": "hunt_three_rivers_run",
+      "label": "Confluence Trail",
+      "checkpointIds": [
+        "cp_smithfield_bridge",
+        "cp_market_square",
+        "cp_ppg_place",
+        "cp_block_house",
+        "final_point_fountain"
+      ],
+      "approxDistanceMeters": 1700,
+      "approxDurationSeconds": 2940
+    },
+    {
+      "id": "route_foundry",
+      "huntId": "hunt_three_rivers_run",
+      "label": "Foundry Trail",
+      "checkpointIds": [
+        "cp_us_steel_tower",
+        "cp_courthouse_bridge_of_sighs",
+        "cp_kaufmanns_clock",
+        "cp_dollar_bank_lions",
+        "final_point_fountain"
+      ],
+      "approxDistanceMeters": 1850,
+      "approxDurationSeconds": 3120
+    },
+    {
+      "id": "route_marquee",
+      "huntId": "hunt_three_rivers_run",
+      "label": "Marquee Trail",
+      "checkpointIds": [
+        "cp_katz_plaza",
+        "cp_byham_theater",
+        "cp_clemente_bridge",
+        "cp_fort_duquesne_outline",
+        "final_point_fountain"
+      ],
+      "approxDistanceMeters": 1550,
+      "approxDurationSeconds": 2880
+    }
+  ],
+  "checkpoints": [
+    {
+      "id": "cp_smithfield_bridge",
+      "name": "Smithfield Street Bridge",
+      "latitude": 40.436,
+      "longitude": -80.0007,
+      "clue": "Where the city's oldest river crossing still stands, two great steel eyes lie on their sides and stare across the Mon. Find the portal and look down the span.",
+      "hint": "It carries Smithfield Street across the Monongahela toward Station Square — start from the downtown end.",
+      "hints": [
+        {
+          "text": "It carries Smithfield Street across the Monongahela toward Station Square — start from the downtown end.",
+          "costXp": -15
+        },
+        {
+          "text": "The side trusses bow out and back in like a lens or an eye. That's your photo.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "observe-detail",
+      "observationQuestion": "What everyday shape does each side truss resemble?",
+      "acceptedAnswers": [
+        "lens",
+        "eye",
+        "oval",
+        "almond",
+        "lenticular",
+        "convex lens"
+      ],
+      "photoRequirement": "The side trusses are a 'lenticular' design — each bows out then back in like a double-convex lens. Frame the bridge down its length so that lens shape reads.",
+      "landmarkDescription": "A long steel through-truss whose top and bottom chords curve apart then together (lens/eye profile); pale blue-and-beige paint; a stone Gothic-Revival portal arch at the entrance; river and Station Square beyond.",
+      "historicalReveal": "You're standing on the oldest river bridge in Pittsburgh and one of the first major steel bridges in the United States. Gustav Lindenthal — just 32 — completed it in 1883 on the stone piers of an earlier John Roebling suspension bridge, which itself replaced a wooden covered bridge lost to the Great Fire of 1845. Its lens-shaped 'lenticular' trusses were the first of their kind used in America; the whole span is now a National Historic Landmark.",
+      "sources": [
+        {
+          "title": "ASCE Historic Landmarks",
+          "url": "https://www.asce.org/about-civil-engineering/history-and-heritage/historic-landmarks"
+        },
+        {
+          "title": "SAH Archipedia",
+          "url": "https://sah-archipedia.org/"
+        },
+        {
+          "title": "Wikipedia: Smithfield Street Bridge",
+          "url": "https://en.wikipedia.org/wiki/Smithfield_Street_Bridge"
+        }
+      ],
+      "radiusMeters": 40,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 300,
+      "confidenceConcerns": "Lower confidence if the shot is a tight close-up of paint or railing with no truss curvature visible, or taken at night with the truss unlit.",
+      "audioShort": "This is Pittsburgh's oldest river bridge — an 1883 steel span whose lens-shaped trusses were the first of their kind in America.",
+      "realWorldLocation": "Downtown (Fort Pitt Blvd) approach/portal of the Smithfield Street Bridge over the Monongahela",
+      "accessibility": "Flat sidewalk approach; stay on the pedestrian walkway, away from traffic lanes. Windy over the river.",
+      "referenceImageId": "ref_smithfield_bridge"
+    },
+    {
+      "id": "cp_market_square",
+      "name": "Market Square (The Diamond)",
+      "latitude": 40.4411,
+      "longitude": -80.0019,
+      "clue": "In the open square Pittsburgh has gathered in since 1784, find the fried-fish sign of the city's oldest tavern and put it in frame.",
+      "hint": "Look for the Original Oyster House — it's been on this square since 1870.",
+      "hints": [
+        {
+          "text": "Look for the Original Oyster House — it's been on this square since 1870.",
+          "costXp": -15
+        },
+        {
+          "text": "The square's old name is a gem — literally a card suit. It shows up on nearby signage.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "observe-detail",
+      "observationQuestion": "By what one-word nickname has this square been known since 1784?",
+      "acceptedAnswers": [
+        "diamond",
+        "the diamond"
+      ],
+      "photoRequirement": "Find the Original Oyster House, Pittsburgh's oldest bar and restaurant (since 1870), and photograph its storefront/sign.",
+      "landmarkDescription": "A vintage storefront reading 'Original Oyster House' on the open Market Square plaza (Belgian-block paving, surrounding low-rise brick facades).",
+      "historicalReveal": "Philadelphia surveyors laid out this square in 1784 and called it 'the Diamond,' a Scotch-Irish word for a town's public square. It held Pittsburgh's first courthouse, its first jail, and the first newspaper published west of the Alleghenies. The Original Oyster House opened in 1870 on the site of the 1827 Bear Tavern and is still the oldest bar and restaurant in the city.",
+      "sources": [
+        {
+          "title": "WPXI 'On This Day'"
+        },
+        {
+          "title": "Popular Pittsburgh"
+        },
+        {
+          "title": "Post-Gazette The Digs"
+        }
+      ],
+      "radiusMeters": 30,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 840,
+      "confidenceConcerns": "Lower confidence if the storefront name isn't legible, or if a different Market Square eatery is shown.",
+      "audioShort": "This is 'the Diamond,' Pittsburgh's public square since 1784 — home to its first courthouse and, since 1870, the city's oldest bar.",
+      "realWorldLocation": "Market Square plaza, Downtown Pittsburgh; Original Oyster House storefront",
+      "accessibility": "Fully flat pedestrian plaza; benches; busy at lunchtime. Exterior only — no need to enter any business.",
+      "referenceImageId": "ref_oyster_house"
+    },
+    {
+      "id": "cp_ppg_place",
+      "name": "PPG Place Plaza",
+      "latitude": 40.4405,
+      "longitude": -80.003,
+      "clue": "Six towers of mirror glass rise like a fairy-tale castle. At their feet, a stone needle balances on a cluster of dark spheres — count what holds it up.",
+      "hint": "Go to the plaza at the center of the glass complex; the needle is a pink granite obelisk.",
+      "hints": [
+        {
+          "text": "Go to the plaza at the center of the glass complex; the needle is a pink granite obelisk.",
+          "costXp": -15
+        },
+        {
+          "text": "Look at the base of the obelisk — large black stone balls carry it. Count them.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "count-feature",
+      "observationQuestion": "How many large black stone balls support the base of the plaza obelisk?",
+      "acceptedAnswers": [
+        "4",
+        "four"
+      ],
+      "photoRequirement": "The plaza obelisk rests on large black granite spheres (locals call it the 'Tomb of the Unknown Bowler'). Count the spheres, and frame the obelisk with the glass tower behind it.",
+      "landmarkDescription": "A pink granite obelisk on a cluster of black spheres, set in a plaza ringed by reflective neo-Gothic glass towers bristling with spires.",
+      "historicalReveal": "PPG Place, finished in 1984 by Philip Johnson and John Burgee, wraps modern offices in almost a million square feet of reflective glass and 231 neo-Gothic spires — a mirror-glass castle. Johnson said he was echoing two Pittsburgh landmarks you may meet elsewhere on this hunt: the University of Pittsburgh's Cathedral of Learning and H. H. Richardson's Allegheny County Courthouse.",
+      "sources": [
+        {
+          "title": "PPG Place official"
+        },
+        {
+          "title": "WPXI history"
+        },
+        {
+          "title": "Vitro Glass"
+        },
+        {
+          "title": "ArchDaily"
+        }
+      ],
+      "radiusMeters": 30,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 480,
+      "confidenceConcerns": "Lower confidence if only the tower (no obelisk) is shown, or in winter when the ice rink/holiday tree may partly obscure the obelisk base.",
+      "audioShort": "PPG Place is a 1984 glass 'castle' of 231 neo-Gothic spires, designed by Philip Johnson to echo the city's older Gothic landmarks.",
+      "realWorldLocation": "PPG Place plaza, between Third & Fourth Ave and Market & Wood St",
+      "accessibility": "Flat, open plaza; seasonal fountain in summer and ice rink in winter. Exterior only.",
+      "referenceImageId": "ref_ppg_obelisk"
+    },
+    {
+      "id": "cp_block_house",
+      "name": "Fort Pitt Block House",
+      "latitude": 40.4412,
+      "longitude": -80.0098,
+      "clue": "The oldest building in Pittsburgh is small, brick, and armed with narrow slits. Reach the little fort in the park and count its walls.",
+      "hint": "It's the tiny brick redoubt near the Fort Pitt Museum, close to the Point.",
+      "hints": [
+        {
+          "text": "It's the tiny brick redoubt near the Fort Pitt Museum, close to the Point.",
+          "costXp": -15
+        },
+        {
+          "text": "Walk its perimeter — it isn't a square. Count the sides.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "then-and-now",
+      "observationQuestion": "How many sides does the brick blockhouse have?",
+      "acceptedAnswers": [
+        "5",
+        "five",
+        "pentagon",
+        "pentagonal"
+      ],
+      "photoRequirement": "The Block House is a five-sided (pentagonal) brick redoubt lined with narrow musket loopholes on both floors. Photograph the building so a loophole and its five-sided shape are visible.",
+      "landmarkDescription": "A small two-story brick redoubt with narrow vertical musket slits and a pyramidal roof, standing in parkland near the rivers.",
+      "historicalReveal": "Built in 1764 as one of five small redoubts guarding Fort Pitt, this is the oldest building in Pittsburgh and the only surviving piece of the fort. Colonel Henry Bouquet ordered it after Native attacks on the frontier, which is why its walls are pierced with musket loopholes. It survived demolition because families lived in it for over a century, and in 1894 Mary Schenley gave it to the Daughters of the American Revolution, who protect it still.",
+      "sources": [
+        {
+          "title": "Fort Pitt Block House official"
+        },
+        {
+          "title": "Pittsburgh Quarterly"
+        },
+        {
+          "title": "Steel City History"
+        },
+        {
+          "title": "Wikipedia"
+        }
+      ],
+      "radiusMeters": 25,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 840,
+      "confidenceConcerns": "Lower confidence if the shot is an interior/plaque photo with no exterior wall count, or a generic parkland photo.",
+      "audioShort": "This 1764 brick redoubt is Pittsburgh's oldest building — the last surviving piece of Fort Pitt, saved and still cared for by the DAR.",
+      "realWorldLocation": "Fort Pitt Block House, Point State Park",
+      "accessibility": "Paved park paths, ADA accessible; exterior viewable anytime. Near the fountain and museum.",
+      "referenceImageId": "ref_block_house"
+    },
+    {
+      "id": "cp_us_steel_tower",
+      "name": "U.S. Steel Tower",
+      "latitude": 40.4416,
+      "longitude": -79.9957,
+      "clue": "The tallest tower in the city was built to rust on purpose. Stand at the foot of one of its enormous outside columns and look up.",
+      "hint": "It's the tallest building downtown, on Grant Street, with huge steel columns standing outside the glass.",
+      "hints": [
+        {
+          "text": "It's the tallest building downtown, on Grant Street, with huge steel columns standing outside the glass.",
+          "costXp": -15
+        },
+        {
+          "text": "Look at the steel's surface — it isn't painted. Its color is the answer.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "observe-detail",
+      "observationQuestion": "What color has the tower's weathering steel turned?",
+      "acceptedAnswers": [
+        "rust",
+        "rusty",
+        "rust-brown",
+        "brown",
+        "orange",
+        "bronze"
+      ],
+      "photoRequirement": "The tower is clad in COR-TEN 'weathering steel' that forms a rust-brown protective skin, with massive structural columns on the outside of the building. Photograph one exterior column / the rust-brown facade looking upward.",
+      "landmarkDescription": "Massive rust-brown steel structural columns at street level, a dark curtain-wall tower rising above; the tower's footprint is triangular with notched corners.",
+      "historicalReveal": "Finished in 1970, this is the tallest building in Pittsburgh (64 floors, 841 feet), with a triangular floor plan that mirrors the city's 'Golden Triangle.' U.S. Steel built it as a showcase for COR-TEN, the weathering steel it patented in 1933 — steel engineered to rust into a stable brown patina that protects the metal beneath, so it never needs paint.",
+      "sources": [
+        {
+          "title": "Double Stone Steel"
+        },
+        {
+          "title": "Wikipedia: U.S. Steel Tower"
+        }
+      ],
+      "radiusMeters": 35,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 300,
+      "confidenceConcerns": "Lower confidence if a neighboring building's columns are shown, or if the frame is all sky/glass with no weathering-steel surface visible.",
+      "audioShort": "Pittsburgh's tallest tower, from 1970, is a triangular showcase for weathering steel — metal designed to rust on purpose and never be painted.",
+      "realWorldLocation": "600 Grant Street (base of the U.S. Steel / UPMC Tower)",
+      "accessibility": "Flat downtown sidewalk at the tower base; busy office district on weekdays. Exterior only.",
+      "referenceImageId": "ref_us_steel_column"
+    },
+    {
+      "id": "cp_courthouse_bridge_of_sighs",
+      "name": "Allegheny County Courthouse — Bridge of Sighs",
+      "latitude": 40.4385,
+      "longitude": -79.9953,
+      "clue": "Behind the great stone courthouse, an enclosed bridge crosses a street in mid-air, once used to walk prisoners from their cells. Find it and read the street it leaps.",
+      "hint": "Go around to the Ross Street side of the courthouse and look up.",
+      "hints": [
+        {
+          "text": "Go around to the Ross Street side of the courthouse and look up.",
+          "costXp": -15
+        },
+        {
+          "text": "The street name is posted on the corner sign right beneath the bridge.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "hidden-angle",
+      "observationQuestion": "Which street does the enclosed Bridge of Sighs span?",
+      "acceptedAnswers": [
+        "ross",
+        "ross street",
+        "ross st"
+      ],
+      "photoRequirement": "An enclosed stone 'Bridge of Sighs' arches over the street, linking the courthouse to the old jail. Photograph the bridge spanning the street.",
+      "landmarkDescription": "A short, roofed stone bridge with small arched openings spanning a street between two heavy rusticated-granite Romanesque buildings.",
+      "historicalReveal": "This is H. H. Richardson's masterpiece, finished in 1888 — the building that gave the whole 'Richardsonian Romanesque' style its name. Its enclosed 'Bridge of Sighs,' modeled on the one in Venice, carried prisoners from the old jail to the courtroom. In 1902 the warden's wife, Kate Soffel, fell for one of the Biddle brothers and helped the two convicted murderers escape across it — a scandal Pittsburgh still tells.",
+      "sources": [
+        {
+          "title": "SAH Archipedia",
+          "url": "https://sah-archipedia.org/"
+        },
+        {
+          "title": "Library of Congress HABS"
+        },
+        {
+          "title": "Wikipedia: Allegheny County Jail"
+        }
+      ],
+      "radiusMeters": 30,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 660,
+      "confidenceConcerns": "Lower confidence if only a building facade is shown with no elevated bridge, or if the Grant Street front is photographed instead.",
+      "audioShort": "Richardson's 1888 courthouse gave a whole architectural style its name; its Venice-style Bridge of Sighs once carried prisoners — and a famous 1902 escape.",
+      "realWorldLocation": "Ross Street side of the Allegheny County Courthouse (436 Grant St), enclosed bridge to the old jail",
+      "accessibility": "Public sidewalk on Ross Street; the bridge is viewable from the street. Some slope on Grant/Ross.",
+      "referenceImageId": "ref_bridge_of_sighs"
+    },
+    {
+      "id": "cp_kaufmanns_clock",
+      "name": "Kaufmann's Clock",
+      "latitude": 40.44,
+      "longitude": -79.9986,
+      "clue": "For a century Pittsburghers have met sweethearts and friends beneath one bronze clock hanging from a department-store corner. Stand under it and name the crossing.",
+      "hint": "It projects from the building corner one story up, at a famous downtown intersection.",
+      "hints": [
+        {
+          "text": "It projects from the building corner one story up, at a famous downtown intersection.",
+          "costXp": -15
+        },
+        {
+          "text": "Two street-name signs meet at this exact corner — either one is the answer.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "missing-name",
+      "observationQuestion": "Name either of the two streets that meet at this corner.",
+      "acceptedAnswers": [
+        "fifth",
+        "fifth avenue",
+        "5th",
+        "5th avenue",
+        "smithfield",
+        "smithfield street"
+      ],
+      "photoRequirement": "A large ornate bronze clock projects from the building corner, one story above the sidewalk. Photograph it looking up.",
+      "landmarkDescription": "An ornate bronze clock cantilevered from a masonry building corner, one story up, over a busy downtown intersection.",
+      "historicalReveal": "The 2,500-pound bronze clock overhead went up in 1913 on the Kaufmann's department store, and 'Meet me under Kaufmann's clock' became the phrase generations of Pittsburghers used for a downtown rendezvous. The Kaufmann family's taste ran deep: they also commissioned Frank Lloyd Wright's Fallingwater. The store is apartments and shops now, but the clock still keeps time.",
+      "sources": [
+        {
+          "title": "Wikipedia: Kaufmann's"
+        },
+        {
+          "title": "CBS Pittsburgh"
+        },
+        {
+          "title": "PA Historical Marker (HMdb)"
+        }
+      ],
+      "radiusMeters": 20,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 600,
+      "confidenceConcerns": "Lower confidence if a generic street clock or a different building clock is shown; the clock should read as ornate bronze projecting from a corner.",
+      "audioShort": "This 1913 bronze clock gave Pittsburgh the phrase 'meet me under Kaufmann's clock' — from the family that later commissioned Fallingwater.",
+      "realWorldLocation": "Corner of Fifth Avenue & Smithfield Street (former Kaufmann's / Macy's building)",
+      "accessibility": "Flat street corner; can be crowded. Exterior only. Small geofence — expect the player to stand at the corner.",
+      "referenceImageId": "ref_kaufmanns_clock"
+    },
+    {
+      "id": "cp_dollar_bank_lions",
+      "name": "Dollar Bank Lions",
+      "latitude": 40.4396,
+      "longitude": -79.9983,
+      "clue": "On the old banking street, two great stone lions have guarded the people's savings since 1871. Photograph the pair.",
+      "hint": "They flank the entrance of Dollar Bank on Fourth Avenue.",
+      "hints": [
+        {
+          "text": "They flank the entrance of Dollar Bank on Fourth Avenue.",
+          "costXp": -15
+        },
+        {
+          "text": "The tradition says they guard the people's money — that word is your answer.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "recreate-pose",
+      "observationQuestion": "By tradition, the lions stand guard over the people's ____.",
+      "acceptedAnswers": [
+        "money",
+        "savings",
+        "the people's money"
+      ],
+      "photoRequirement": "Two life-size brownstone lions flank the bank's entrance — one posed guarding, one resting. Photograph both lions.",
+      "landmarkDescription": "A pair of carved stone lions on pedestals flanking an ornate columned bank entrance on a low-rise historic avenue.",
+      "historicalReveal": "Max Kohler carved these lions in 1871 from single blocks of Connecticut brownstone as 'guardians of the people's money.' Dollar Bank made its name letting working people open an account with as little as one dollar. The lions you see are exact replicas — the weather-worn originals were moved indoors in 2012. Fourth Avenue was Pittsburgh's Wall Street, and if you look around, more carved lions are hunting along it.",
+      "sources": [
+        {
+          "title": "Dollar Bank history"
+        },
+        {
+          "title": "PHLF"
+        },
+        {
+          "title": "90.5 WESA"
+        },
+        {
+          "title": "The Clio"
+        }
+      ],
+      "radiusMeters": 25,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 420,
+      "confidenceConcerns": "Lower confidence if only one lion is in frame, or if a different Fourth Avenue lion (there are several) is shown without the bank entrance.",
+      "audioShort": "Carved in 1871 as guardians of the people's money, these Dollar Bank lions anchor Pittsburgh's old Wall Street on Fourth Avenue.",
+      "realWorldLocation": "Dollar Bank, 340 Fourth Avenue (historic 'Fourth Avenue' banking row)",
+      "accessibility": "Flat sidewalk; lions are at the entrance steps. Exterior only.",
+      "referenceImageId": "ref_dollar_bank_lions"
+    },
+    {
+      "id": "cp_katz_plaza",
+      "name": "Agnes R. Katz Plaza (Eyeball Park)",
+      "latitude": 40.4437,
+      "longitude": -79.9992,
+      "clue": "In the theater district there's a plaza locals call 'Eyeball Park.' Find out why, and sit for a photo with one of its odd stone benches.",
+      "hint": "It's the small plaza at 7th and Penn with a tall bronze fountain at its center.",
+      "hints": [
+        {
+          "text": "It's the small plaza at 7th and Penn with a tall bronze fountain at its center.",
+          "costXp": -15
+        },
+        {
+          "text": "The big granite benches are carved as a body part — the one you're using to read this.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "observe-detail",
+      "observationQuestion": "The plaza's giant granite benches are carved in the shape of what body part?",
+      "acceptedAnswers": [
+        "eye",
+        "eyes",
+        "eyeball",
+        "eyeballs"
+      ],
+      "photoRequirement": "The plaza's oversized granite benches are carved as human eyes (three pairs), around a 25-foot bronze fountain. Photograph one of the eye-shaped benches.",
+      "landmarkDescription": "A large smooth granite bench sculpted as a human eye, in a paved plaza with a tall irregular bronze fountain and rows of clipped trees.",
+      "historicalReveal": "This is Agnes R. Katz Plaza, opened in 1999 and nicknamed 'Eyeball Park.' The eye-shaped benches and the 25-foot bronze fountain are the work of Louise Bourgeois — her largest public commission in the U.S. at the time — with landscape by Daniel Kiley and architecture by Michael Graves. Bourgeois said the fountain's two streams of water stand for a couple whose lives mesh together.",
+      "sources": [
+        {
+          "title": "Pittsburgh Cultural Trust"
+        },
+        {
+          "title": "The Cultural Landscape Foundation"
+        },
+        {
+          "title": "Sculpture Magazine"
+        }
+      ],
+      "radiusMeters": 25,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 300,
+      "confidenceConcerns": "Lower confidence if a plain rectangular bench is shown (there are also ordinary benches under the trees) rather than an eye-shaped one.",
+      "audioShort": "Louise Bourgeois's 'Eyeball Park' — giant eye-shaped benches and a bronze fountain, opened in 1999 in the Cultural District.",
+      "realWorldLocation": "Agnes R. Katz Plaza, corner of 7th Street & Penn Avenue, Cultural District",
+      "accessibility": "Flat paved plaza with seating. Exterior public space.",
+      "referenceImageId": "ref_eye_bench"
+    },
+    {
+      "id": "cp_byham_theater",
+      "name": "Byham Theater",
+      "latitude": 40.4432,
+      "longitude": -80.0001,
+      "clue": "A 1903 vaudeville house on Sixth Street has worn three different names in its life. Photograph the name lit on its marquee today.",
+      "hint": "It's the historic theater on Sixth Street run by the Cultural Trust.",
+      "hints": [
+        {
+          "text": "It's the historic theater on Sixth Street run by the Cultural Trust.",
+          "costXp": -15
+        },
+        {
+          "text": "The name on the marquee is a family's surname — read it off the sign.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "then-and-now",
+      "observationQuestion": "What single name is displayed on the theater's marquee today?",
+      "acceptedAnswers": [
+        "byham"
+      ],
+      "photoRequirement": "Photograph the theater's illuminated marquee / vertical name sign on Sixth Street.",
+      "landmarkDescription": "A historic theater facade with an illuminated marquee and/or vertical blade sign reading 'BYHAM' on a Cultural District street.",
+      "historicalReveal": "This theater opened in 1903 as the Gayety, a vaudeville house that hosted stars like Ethel Barrymore and Helen Hayes. In the 1930s it became the Fulton movie palace, and in 1995 the Pittsburgh Cultural Trust restored it and renamed it the Byham after a gift from the Byham family. Three names, three eras, one stubbornly surviving building — with pressed-copper cherubs still watching from the ceiling inside.",
+      "sources": [
+        {
+          "title": "Wikipedia: Byham Theater"
+        },
+        {
+          "title": "Pittsburgh Cultural Trust"
+        },
+        {
+          "title": "Experience Pennsylvania"
+        }
+      ],
+      "radiusMeters": 25,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 420,
+      "confidenceConcerns": "Lower confidence if a neighboring venue (Benedum, Heinz Hall, O'Reilly) marquee is shown instead, or if no legible name is captured.",
+      "audioShort": "Opened in 1903 as the Gayety, later the Fulton movie palace, and the Byham since 1995 — three names, one surviving theater.",
+      "realWorldLocation": "Byham Theater, 101 Sixth Street, Cultural District",
+      "accessibility": "Flat sidewalk; exterior marquee is public. No entry required.",
+      "referenceImageId": "ref_byham_marquee"
+    },
+    {
+      "id": "cp_clemente_bridge",
+      "name": "Roberto Clemente Bridge",
+      "latitude": 40.4444,
+      "longitude": -80.0016,
+      "clue": "One of three near-identical sisters crosses the Allegheny here, painted a color you can't miss, and closed to cars on ball-game days. Shoot straight up its span.",
+      "hint": "It carries Sixth Street to the North Shore and PNC Park — start from the downtown end.",
+      "hints": [
+        {
+          "text": "It carries Sixth Street to the North Shore and PNC Park — start from the downtown end.",
+          "costXp": -15
+        },
+        {
+          "text": "Its paint color is the answer, and it's the same on all three 'sister' bridges.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "count-feature",
+      "observationQuestion": "What color is the bridge painted?",
+      "acceptedAnswers": [
+        "yellow",
+        "gold",
+        "aztec gold"
+      ],
+      "photoRequirement": "This bright-yellow self-anchored suspension bridge is one of the 'Three Sisters.' Photograph it looking along its length from the downtown end.",
+      "landmarkDescription": "A bright-yellow suspension bridge with tall towers and eyebar chains, crossing a river toward a ballpark/North Shore skyline.",
+      "historicalReveal": "This is the Roberto Clemente (Sixth Street) Bridge, one of the 'Three Sisters' at 6th, 7th, and 9th Streets — the only set of three nearly identical bridges anywhere, and among the first self-anchored suspension spans built in the United States. It was renamed in 1998 for the Pirates' Hall of Fame right fielder, and it closes to traffic and fills with pedestrians on game days at PNC Park just across the water.",
+      "sources": [
+        {
+          "title": "Wikipedia: Roberto Clemente Bridge"
+        },
+        {
+          "title": "Bridgeville Area Historical Society"
+        },
+        {
+          "title": "Positively Pittsburgh"
+        }
+      ],
+      "radiusMeters": 35,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 600,
+      "confidenceConcerns": "Lower confidence if the shot could be any of the three near-identical sister bridges photographed generically — that's acceptable here since only color + form are checked.",
+      "audioShort": "The yellow Roberto Clemente Bridge is one of Pittsburgh's 'Three Sisters' — closed to cars on Pirates game days and named for the Hall of Famer.",
+      "realWorldLocation": "Downtown (Sixth Street) end of the Roberto Clemente Bridge over the Allegheny",
+      "accessibility": "Sidewalk/pedestrian access at the downtown end; windy over the river. Stay on the walkway.",
+      "referenceImageId": "ref_clemente_bridge"
+    },
+    {
+      "id": "cp_fort_duquesne_outline",
+      "name": "Fort Duquesne Outline",
+      "latitude": 40.4423,
+      "longitude": -80.0083,
+      "clue": "In the great lawn near the rivers, the ghost of a vanished French fort is drawn in stone on the ground. Find the outline and its center marker.",
+      "hint": "Look down, not up — a granite line traces a fort's shape in the open lawn.",
+      "hints": [
+        {
+          "text": "Look down, not up — a granite line traces a fort's shape in the open lawn.",
+          "costXp": -15
+        },
+        {
+          "text": "A European power built and then burned this fort in the 1750s. That nation is the answer.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "narrated-event",
+      "observationQuestion": "The outline traces a fort built by which European power?",
+      "acceptedAnswers": [
+        "french",
+        "france",
+        "the french"
+      ],
+      "photoRequirement": "A granite tracery set into the lawn outlines the vanished Fort Duquesne, with a bronze medallion at its center depicting the fort. Photograph the stone outline / the central medallion.",
+      "landmarkDescription": "A pale granite line set flush into a broad grass lawn forming a geometric fort outline, often with a round bronze medallion at the center; rivers/park beyond.",
+      "historicalReveal": "You're standing on the footprint of Fort Duquesne, built by the French in 1754 to hold the forks of the Ohio. When the British closed in during 1758, the French burned it themselves rather than surrender it, and the British then built the far larger Fort Pitt nearby. The granite outline — bronze medallion at its heart — marks exactly where the French fort stood, and it glows under LED light at night.",
+      "sources": [
+        {
+          "title": "PA DCNR Point State Park"
+        },
+        {
+          "title": "NPS",
+          "url": "https://www.nps.gov/"
+        },
+        {
+          "title": "Great Allegheny Passage",
+          "url": "https://gaptrail.org/"
+        }
+      ],
+      "radiusMeters": 30,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 960,
+      "confidenceConcerns": "Lower confidence if a plain lawn or an unrelated plaque is shown with no visible stone outline.",
+      "audioShort": "This stone outline marks Fort Duquesne — built by the French in 1754 and burned by them in 1758 rather than let the British take it.",
+      "realWorldLocation": "Granite tracery of Fort Duquesne in the Great Lawn, Point State Park",
+      "accessibility": "Flat lawn and paved park paths, ADA accessible. Open parkland.",
+      "referenceImageId": "ref_fort_duquesne_outline"
+    },
+    {
+      "id": "final_point_fountain",
+      "name": "The Point — Confluence Fountain",
+      "latitude": 40.4417,
+      "longitude": -80.0093,
+      "clue": "Every trail ends where two rivers become a third. Reach the very tip of the Point, find the bronze medallion set in the stone, and mark your arrival together.",
+      "hint": "Walk to the farthest tip of Point State Park, past the fountain, to the confluence.",
+      "hints": [
+        {
+          "text": "Walk to the farthest tip of Point State Park, past the fountain, to the confluence.",
+          "costXp": -15
+        },
+        {
+          "text": "A large round bronze medallion is set into the stone at the tip — that's your marker.",
+          "costXp": -25
+        }
+      ],
+      "challengeKind": "narrated-event",
+      "observationQuestion": "Two rivers meet here to form a third — name the river that begins at this point.",
+      "acceptedAnswers": [
+        "ohio",
+        "ohio river"
+      ],
+      "photoRequirement": "All three trails converge here. Stand at the tip of the Point where the rivers meet, find the bronze medallion set into the stone (the western end of the Great Allegheny Passage), and take one arrival photo — a team group shot, or a selfie with the confluence behind you. If the fountain's geyser is running, get it in frame for bonus flair.",
+      "landmarkDescription": "The tip of a point of land where two rivers join into one, open sky/water, park paving; ideally a round bronze medallion in the stone and/or a tall fountain geyser.",
+      "historicalReveal": "This is the Point — where the Allegheny and the Monongahela join to form the Ohio, the spot that made Pittsburgh worth fighting three empires over and the birthplace of the city. The 150-foot fountain, opened in 1974 (an idea Frank Lloyd Wright first floated in 1947), draws on water locals call the 'fourth river,' an aquifer beneath your feet. The bronze medallion marks Mile 0 — the western end of the 150-mile Great Allegheny Passage. Three rivers, three trails, one finish.",
+      "sources": [
+        {
+          "title": "PA DCNR",
+          "url": "https://www.dcnr.pa.gov/StateParks/FindAPark/PointStatePark/"
+        },
+        {
+          "title": "Pittsburgh Magazine"
+        },
+        {
+          "title": "Clio",
+          "url": "https://theclio.com/"
+        },
+        {
+          "title": "Great Allegheny Passage",
+          "url": "https://gaptrail.org/"
+        },
+        {
+          "title": "NPS",
+          "url": "https://www.nps.gov/"
+        }
+      ],
+      "radiusMeters": 40,
+      "baseXp": 100,
+      "expectedCompletionSeconds": 540,
+      "confidenceConcerns": "Lower confidence if the water/confluence isn't visible, or if the shot is elsewhere in the park with no riverfront. Never fail solely because the fountain is off.",
+      "audioShort": "The Point, where the Allegheny and Monongahela form the Ohio — Pittsburgh's birthplace, its 150-foot fountain, and Mile 0 of the Great Allegheny Passage.",
+      "realWorldLocation": "Tip of Point State Park, at the Point Fountain / Great Allegheny Passage bronze terminus medallion",
+      "accessibility": "Paved, ADA-accessible park paths to the tip. Fountain is seasonal (off in winter and during maintenance). Open and exposed — wind and sun.",
+      "referenceImageId": "ref_point_fountain"
+    }
+  ]
+}

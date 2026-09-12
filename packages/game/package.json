@@ -1,0 +1,28 @@
+{
+  "name": "@ww/game",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./mount": "./src/mount.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit false --emitDeclarationOnly",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'lint: game ok'",
+    "test": "vitest run",
+    "mock": "vite --config src/mock/vite.config.ts"
+  },
+  "dependencies": {
+    "@ww/shared": "workspace:*",
+    "phaser": "^3.87.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8",
+    "vite": "^6.0.7"
+  }
+}
