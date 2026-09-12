@@ -24,7 +24,14 @@ import {
  * fingers visible") is well within a small multimodal model. One constant, so
  * swapping it is a one-line change.
  */
-export const GEMINI_MODEL_ID = 'gemini-2.0-flash';
+/**
+ * Verified live against the API on 2026-09-12. `gemini-2.0-flash` is RETIRED —
+ * it returns 404 "no longer available" and the provider degrades to a
+ * confidence-0 "could not reach Gemini" verdict, which looks like a network
+ * blip rather than a dead model. Check this endpoint still resolves before
+ * demoing; `gemini-flash-latest` also works if a specific version is pulled.
+ */
+export const GEMINI_MODEL_ID = 'gemini-3.6-flash';
 
 /**
  * 20s. Long enough for a large phone photo on venue wifi, short enough that a

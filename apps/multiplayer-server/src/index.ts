@@ -7,7 +7,24 @@
  *   - Health endpoint used by the web app to show connection status [P1]
  */
 
-import 'dotenv/config';
+/**
+ * Env loading, deliberately explicit.
+ *
+ * `import 'dotenv/config'` reads `.env` relative to the PROCESS CWD, which for
+ * a pnpm workspace script is this package directory — not the repo root, and
+ * not `.env.local`. That silently produced a server reporting `gemini: mocked`
+ * while a perfectly good key sat in the root `.env.local`. Load both, rooted
+ * at the workspace, with `.env.local` winning.
+ */
+import { config as loadEnv } from 'dotenv';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+loadEnv({ path: resolve(repoRoot, '.env') });
+// `override` so .env.local beats an earlier .env, matching Next.js's precedence.
+loadEnv({ path: resolve(repoRoot, '.env.local'), override: true });
+
 import http from 'node:http';
 import express, { type Express } from 'express';
 import cors from 'cors';

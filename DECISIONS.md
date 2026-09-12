@@ -102,7 +102,22 @@ checkpoint 3's id WITH checkpoint 3's own coordinates (so the geofence would
 have passed it) and asserts the provider was never called, with a positive
 control alongside so the zero means something.
 
-## D16 — OPEN ITEM: live Gemini path is unexercised
-Every verification test injects a fake client by design, so the real API path
-runs for the first time when someone submits with `GEMINI_API_KEY` set. Budget
-time to try one real photo before demoing.
+## D16 — RESOLVED: live Gemini path verified 2026-09-12
+Every verification test injects a fake client by design. The real path has now
+been executed and verified — `pnpm --filter @ww/multiplayer-server check:gemini`.
+
+Two real bugs surfaced the moment it ran, neither visible to any test:
+
+1. **The key never loaded.** `import 'dotenv/config'` reads `.env` relative to
+   the process CWD, which for a pnpm workspace script is the package dir — not
+   the repo root, and not `.env.local`. The server reported `gemini: mocked`
+   with a perfectly good key on disk. Now loaded explicitly from the workspace
+   root, `.env.local` overriding `.env`.
+2. **`gemini-2.0-flash` is RETIRED.** It 404s with "no longer available".
+   The provider degraded to a confidence-0 "could not reach Gemini" verdict —
+   which looks like a network blip, not a dead model. Now `gemini-3.6-flash`
+   (verified live; `gemini-flash-latest` also resolves).
+
+The check script itself reported 8/8 while every call was 404ing, because the
+degraded verdict satisfies every shape assertion. It now asserts the reason is
+a real judgement rather than the unreachable fallback.

@@ -8,22 +8,29 @@ Last updated: see `git log -1 --format=%cd`.
 
 ## 1. Things only you can do
 
-### ⚠️ Paste the Gemini key — 30 seconds, unblocks your headline claim
+### ✅ Gemini is LIVE — done, but read this
 
-`/Users/sarthakjain/Desktop/hackCMU/.env.local`, line 2, after `GEMINI_API_KEY=`.
-Then restart the server and confirm:
+You pasted the key and it works. `curl -s localhost:2567/health` reports
+`"gemini":"live"`, and a real image round-trips in ~2.5s with a genuine
+judgement. Verify anytime with:
 
 ```bash
-curl -s localhost:2567/health   # want "gemini":"live", not "mocked"
+pnpm --filter @ww/multiplayer-server check:gemini
 ```
 
-Without it, every photo verification is a deterministic mock. The pitch line
-"Gemini verifies the location and the required pose" is **not demonstrated**
-until a real photo makes a real API call. Everything is wired; it is one env var.
+Two bugs surfaced the instant it ran for real, and both are worth knowing:
 
-**Then actually try one real submission** before you present. The live Gemini
-path has never executed — every test injects a fake client by design (see
-`DECISIONS.md` D16). First real call is the riskiest untested moment you have.
+1. **Your key was being ignored.** `dotenv/config` loads `.env` from the
+   package directory, not `.env.local` at the repo root — the server said
+   `mocked` with a valid key sitting on disk. Fixed.
+2. **`gemini-2.0-flash` is retired.** It 404s. The provider degraded to a
+   confidence-0 "could not reach Gemini" verdict that looks exactly like a
+   network blip. Now on `gemini-3.6-flash`.
+
+**Still worth doing:** submit one real photo of an actual Downtown landmark
+through `/play` before you present. My check used a blank test image — the
+pipeline is proven, the *landmark matching quality* on your specific
+checkpoints is not.
 
 ### ⚠️ Verify the history before you say it out loud
 
