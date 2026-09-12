@@ -17,6 +17,25 @@ import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import type { ChallengeKind, Checkpoint, HistoricalSource } from '@ww/shared';
 import type { Place } from './places.js';
 
+/** Why a draft fell back, in words a non-engineer can act on. */
+export type DraftFailure = 'rate-limited' | 'model-unavailable' | 'bad-response' | 'unreachable';
+
+/**
+ * Turn a provider error into one of four actionable causes.
+ *
+ * 'rate-limited' is the one that matters most in practice: the Gemini free
+ * tier caps generate_content requests, and a ten-stop hunt spends ten of them,
+ * so an exhausted quota is the single likeliest reason a generated hunt comes
+ * back full of placeholders.
+ */
+export function classifyDraftFailure(err: unknown): DraftFailure {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/RESOURCE_EXHAUSTED|429|quota|rate limit/i.test(msg)) return 'rate-limited';
+  if (/404|NOT_FOUND|is not found|unsupported/i.test(msg)) return 'model-unavailable';
+  if (/incomplete draft|JSON|parse|unexpected token/i.test(msg)) return 'bad-response';
+  return 'unreachable';
+}
+
 export const DRAFT_MODEL_ID = process.env.GEMINI_MODEL_ID ?? 'gemini-3.6-flash';
 
 /** Matches the verification service; see its notes on erratic latency. */
@@ -101,6 +120,8 @@ export interface DraftedCheckpoint {
   needsReview: boolean;
   /** True when produced by the labelled mock rather than the real model. */
   mocked: boolean;
+  /** Set only when the real model was tried and failed. See DraftFailure. */
+  failureReason?: DraftFailure;
 }
 
 export interface DraftOptions {
@@ -315,10 +336,23 @@ class GeminiDrafter implements Drafter {
         needsReview: raw.confidence !== 'high',
         mocked: false,
       };
-    } catch {
-      // A failed draft degrades to the labelled placeholder and is flagged for
-      // review — never to a silent gap in the route.
-      return { checkpoint: assemble(place, mockDraft(place), opts), needsReview: true, mocked: true };
+    } catch (err) {
+      /**
+       * A failed draft degrades to the labelled placeholder and is flagged for
+       * review — never to a silent gap in the route.
+       *
+       * But it must not degrade SILENTLY either. This catch used to swallow
+       * the reason, so a rate-limited key and a malformed response and a
+       * network blip all produced the same "[DRAFT]" text, and a hunt where
+       * nine of ten clues were placeholders looked like a successful
+       * generation. Classify it and hand it up.
+       */
+      return {
+        checkpoint: assemble(place, mockDraft(place), opts),
+        needsReview: true,
+        mocked: true,
+        failureReason: classifyDraftFailure(err),
+      };
     }
   }
 }

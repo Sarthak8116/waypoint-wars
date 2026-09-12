@@ -236,6 +236,72 @@ async function queryOverpass(query: string): Promise<unknown> {
 }
 
 /**
+ * Reject landmarks that are a bad idea to send a player to.
+ *
+ * This is a safety filter, not a taste one. The generator sends strangers to
+ * stand outside a building and take a photograph of it, and there are places
+ * where doing that gets someone questioned by security or worse. Observed
+ * live: a Savannah hunt chose a **U.S. Customs and Border Protection**
+ * facility as its grand finale, which every player would have converged on.
+ *
+ * Also excludes places where loitering with a camera is simply wrong —
+ * hospitals, schools, childcare — regardless of how "historic" OSM thinks
+ * they are.
+ *
+ * Deliberately conservative: a false positive costs one candidate out of
+ * dozens, while a false negative points a group of people at a federal
+ * building.
+ */
+const UNSUITABLE_NAME = new RegExp(
+  [
+    'police',
+    'sheriff',
+    'customs',
+    'border protection',
+    'immigration',
+    'correctional',
+    '\\bprison\\b',
+    '\\bjail\\b',
+    'courthouse annex',
+    'military',
+    '\\barmy\\b',
+    '\\bnavy\\b',
+    'air force',
+    'barracks',
+    'embassy',
+    'consulate',
+    'hospital',
+    'medical cent',
+    'emergency room',
+    'school',
+    'kindergarten',
+    'childcare',
+    'nursery',
+    'power station',
+    'substation',
+    'water treatment',
+  ].join('|'),
+  'i',
+);
+
+const UNSUITABLE_TAGS: Array<[string, RegExp]> = [
+  ['amenity', /^(police|prison|fire_station|hospital|clinic|doctors|school|kindergarten|childcare|courthouse)$/i],
+  ['military', /./],
+  ['office', /^(government|diplomatic)$/i],
+  ['healthcare', /./],
+  ['power', /./],
+  ['landuse', /^(military|industrial)$/i],
+];
+
+export function isUnsuitable(name: string, tags: Record<string, string>): boolean {
+  if (UNSUITABLE_NAME.test(name)) return true;
+  return UNSUITABLE_TAGS.some(([key, pattern]) => {
+    const value = tags[key];
+    return typeof value === 'string' && pattern.test(value);
+  });
+}
+
+/**
  * Find named landmarks within `radiusMeters` of a point.
  *
  * One Overpass query covering every filter, rather than one per filter —
@@ -251,6 +317,7 @@ export async function findLandmarks(
 
   const data = (await queryOverpass(body)) as { elements?: OverpassElement[] };
 
+
   const seen = new Set<string>();
   const places: Place[] = [];
 
@@ -262,6 +329,9 @@ export async function findLandmarks(
     const lat = el.lat ?? el.center?.lat;
     const lon = el.lon ?? el.center?.lon;
     if (typeof lat !== 'number' || typeof lon !== 'number') continue;
+
+    // Places we must not send a stranger to photograph.
+    if (isUnsuitable(name, tags)) continue;
 
     // The same landmark often appears as a node AND a way. Dedupe by name.
     const key = name.toLowerCase().trim();

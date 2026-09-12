@@ -48,6 +48,12 @@ export interface GeneratedHunt {
     /** Drafts the model was NOT confident about. Must be reviewed. */
     needsReview: string[];
     mocked: boolean;
+    /**
+     * Checkpoints that fell back to a labelled placeholder because the real
+     * model call failed, and why. Empty on a clean run. A caller that ignores
+     * this can ship a hunt where most clues read "[DRAFT] Find <name>".
+     */
+    placeholders: Array<{ name: string; reason: string }>;
     routeSummary: Array<{ id: string; label: string; stops: number; meters: number }>;
     warnings: string[];
   };
@@ -242,6 +248,7 @@ export async function generateHunt(
   progress('writing clues', `${unique.size} places`);
   const drafted = new Map<string, Checkpoint>();
   const needsReview: string[] = [];
+  const placeholders: Array<{ name: string; reason: string }> = [];
 
   // Sequential, deliberately. Parallel calls trip Gemini's per-minute limit,
   // and a rate-limited draft silently becomes a placeholder.
@@ -254,6 +261,9 @@ export async function generateHunt(
     });
     drafted.set(place.id, result.checkpoint);
     if (result.needsReview) needsReview.push(place.name);
+    if (result.failureReason) {
+      placeholders.push({ name: place.name, reason: result.failureReason });
+    }
     progress('writing clues', place.name);
   }
 
@@ -317,6 +327,21 @@ export async function generateHunt(
     published: false,
   };
 
+  /**
+   * Say it out loud. A hunt that is mostly placeholders is not a hunt, and the
+   * single likeliest cause — an exhausted Gemini free-tier quota — is
+   * something the operator can actually fix.
+   */
+  if (placeholders.length > 0) {
+    const rateLimited = placeholders.filter((p) => p.reason === 'rate-limited').length;
+    warnings.push(
+      `${placeholders.length} of ${drafted.size} clues are labelled [DRAFT] placeholders` +
+        (rateLimited > 0
+          ? ` — Gemini rejected ${rateLimited} call(s) as rate-limited. The free tier caps generate_content requests, and this hunt needs one per stop.`
+          : ` — reasons: ${[...new Set(placeholders.map((p) => p.reason))].join(', ')}.`),
+    );
+  }
+
   progress('done');
 
   return {
@@ -329,6 +354,7 @@ export async function generateHunt(
       checkpointsDrafted: drafted.size,
       needsReview,
       mocked: drafter.mocked,
+      placeholders,
       routeSummary: routes.map((r) => ({
         id: r.id,
         label: r.label,
