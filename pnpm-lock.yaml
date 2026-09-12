@@ -35,6 +35,9 @@ importers:
       '@colyseus/ws-transport':
         specifier: ^0.15.2
         version: 0.15.3(@colyseus/core@0.15.57(@colyseus/schema@2.0.37))(@colyseus/schema@2.0.37)
+      '@ww/content':
+        specifier: workspace:*
+        version: link:../../services/content
       '@ww/hunt-engine':
         specifier: workspace:*
         version: link:../../packages/hunt-engine
@@ -183,6 +186,25 @@ importers:
         version: 2.1.9(@types/node@22.20.2)
 
   packages/shared: {}
+
+  services/content:
+    dependencies:
+      '@google/genai':
+        specifier: ^2.22.0
+        version: 2.22.0
+      '@ww/hunt-engine':
+        specifier: workspace:*
+        version: link:../../packages/hunt-engine
+      '@ww/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.2)
 
   services/verification:
     dependencies:

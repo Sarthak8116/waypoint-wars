@@ -31,7 +31,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "mongodb": "^7.6.0"
+    "mongodb": "^7.6.0",
+    "@ww/content": "workspace:*"
   },
   "devDependencies": {
     "@colyseus/testing": "^0.15.4",

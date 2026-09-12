@@ -49,6 +49,7 @@ import { WebSocketTransport } from '@colyseus/ws-transport';
 import { huntStore } from './hunt-store.js';
 import { initRepository, validateHuntBundle, type HuntRepository } from './persistence/index.js';
 import { verifySubmission } from '@ww/verification';
+import { generateHunt, PlacesError } from '@ww/content';
 import { getVerificationProvider } from './verification-provider.js';
 import { ensureSeeded } from './seed.js';
 import { HuntRoom } from './rooms/HuntRoom.js';
@@ -216,6 +217,70 @@ app.post('/api/verify', (req, res) => {
     } catch (err) {
       console.error('[api] solo verification failed', err);
       res.status(502).json({ error: 'Verification service is unavailable.' });
+    }
+  })();
+});
+
+// ---------------------------------------------------------------------------
+// Generate a hunt for anywhere
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a playable hunt from a place name.
+ *
+ *   POST /api/hunts/generate  { query, duration?, routeCount?, stopsPerRoute? }
+ *
+ * Coordinates come from OpenStreetMap; Gemini only writes the words. The
+ * result is stored but NEVER auto-published: generated history is shown to a
+ * human before anyone is told it as fact. The response carries a report —
+ * which drafts the model was unsure about, whether routes came out balanced —
+ * so the creator UI can show what needs review.
+ *
+ * Takes 20-40 seconds: roughly one Gemini call per unique place, sequential to
+ * stay inside the per-minute limit.
+ */
+app.post('/api/hunts/generate', (req, res) => {
+  void (async () => {
+    const body = req.body as Partial<{
+      query: string;
+      duration: string;
+      routeCount: number;
+      stopsPerRoute: number;
+    }>;
+
+    if (typeof body?.query !== 'string' || body.query.trim().length < 2) {
+      res.status(400).json({ error: 'Tell me where — a city, a neighbourhood, a landmark.' });
+      return;
+    }
+
+    try {
+      const generated = await generateHunt({
+        query: body.query.trim(),
+        ...(body.duration ? { duration: body.duration as never } : {}),
+        ...(typeof body.routeCount === 'number' ? { routeCount: body.routeCount } : {}),
+        ...(typeof body.stopsPerRoute === 'number' ? { stopsPerRoute: body.stopsPerRoute } : {}),
+      });
+
+      const bundle = {
+        hunt: generated.hunt,
+        routes: generated.routes,
+        checkpoints: generated.checkpoints,
+      };
+
+      // Stored so it can be reviewed and published, but `published: false`
+      // keeps it out of anything a player can start.
+      await repository.saveHuntBundle(bundle);
+      huntStore.load(bundle);
+
+      res.status(201).json({ ...bundle, report: generated.report });
+    } catch (err) {
+      if (err instanceof PlacesError) {
+        const status = err.kind === 'not-found' || err.kind === 'empty' ? 404 : 503;
+        res.status(status).json({ error: err.message, kind: err.kind });
+        return;
+      }
+      console.error('[api] hunt generation failed', err);
+      res.status(500).json({ error: 'Could not generate a hunt there.' });
     }
   })();
 });
