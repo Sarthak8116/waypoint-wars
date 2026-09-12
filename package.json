@@ -1,0 +1,22 @@
+{
+  "name": "waypoint-wars",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.15.4",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "seed": "pnpm --filter @ww/multiplayer-server seed"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "vitest": "^2.1.8",
+    "prettier": "^3.4.2"
+  }
+}
