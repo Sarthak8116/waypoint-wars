@@ -21,6 +21,7 @@ import type {
 import type { PublicCheckpoint } from '@ww/shared';
 
 const WS_URL = process.env.NEXT_PUBLIC_MULTIPLAYER_URL ?? 'ws://localhost:2567';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:2567';
 
 export type RoomPhase = 'idle' | 'connecting' | 'lobby' | 'running' | 'finished' | 'error';
 
@@ -220,25 +221,31 @@ export function useHuntRoom() {
     async (code: string, playerName: string) => {
       setView((v) => ({ ...v, phase: 'connecting', error: null }));
       try {
-        const client = new Client(WS_URL);
-        const room = await client.joinById(code.toUpperCase(), { playerName });
-        attach(room, false);
-        return room;
-      } catch {
-        // Fall back to matchmaking by code for servers that key rooms by metadata.
-        try {
-          const client = new Client(WS_URL);
-          const room = await client.join('hunt', { code: code.toUpperCase(), playerName });
-          attach(room, false);
-          return room;
-        } catch (err) {
+        // The six-character code is NOT the Colyseus roomId — the server keeps
+        // its own code->roomId map so codes can stay short and unambiguous.
+        // Resolve it over HTTP first, then join by the real id.
+        const res = await fetch(`${API_URL}/api/rooms/${code.toUpperCase()}`);
+        if (!res.ok) {
           setView((v) => ({
             ...v,
             phase: 'error',
-            error: err instanceof Error ? err.message : 'Could not join that room',
+            error: res.status === 404 ? `No room with code ${code.toUpperCase()}` : 'Invalid code',
           }));
           return null;
         }
+
+        const { roomId } = (await res.json()) as { roomId: string };
+        const client = new Client(WS_URL);
+        const room = await client.joinById(roomId, { playerName });
+        attach(room, false);
+        return room;
+      } catch (err) {
+        setView((v) => ({
+          ...v,
+          phase: 'error',
+          error: err instanceof Error ? err.message : 'Could not join that room',
+        }));
+        return null;
       }
     },
     [attach],

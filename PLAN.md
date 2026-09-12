@@ -30,7 +30,7 @@ finish at the **same** destination, and see a leaderboard + animated route repla
 - [x] **P4 — Map + single-player vertical slice**
 - [ ] **P5 — Gemini verification**
 - [ ] **P6 — Phaser HUD layer**
-- [ ] **P7 — Colyseus multiplayer**
+- [x] **P7 — Colyseus multiplayer**
 - [ ] **P8 — Persistence (Mongo adapter + in-memory fallback)**
 - [ ] **P9 — Route replay + demo mode**
 - [ ] **P10 — Creator dashboard**

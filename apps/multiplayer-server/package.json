@@ -10,24 +10,27 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "echo 'lint: server ok'",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "node scripts/e2e-race.mjs"
   },
   "dependencies": {
-    "@ww/shared": "workspace:*",
-    "@ww/hunt-engine": "workspace:*",
-    "@ww/verification": "workspace:*",
-    "colyseus": "^0.15.17",
+    "@colyseus/core": "^0.15.57",
     "@colyseus/schema": "^2.0.35",
     "@colyseus/ws-transport": "^0.15.2",
-    "express": "^4.21.2",
+    "@ww/hunt-engine": "workspace:*",
+    "@ww/shared": "workspace:*",
+    "@ww/verification": "workspace:*",
+    "colyseus": "^0.15.17",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
   },
   "devDependencies": {
     "@colyseus/testing": "^0.15.4",
-    "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "@types/node": "^22.10.5",
+    "colyseus.js": "^0.15.28",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vitest": "^2.1.8"

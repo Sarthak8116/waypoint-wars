@@ -11,7 +11,7 @@ import 'dotenv/config';
 import http from 'node:http';
 import express, { type Express } from 'express';
 import cors from 'cors';
-import { Server as ColyseusServer } from 'colyseus';
+import { Server as ColyseusServer } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 
 import { huntStore } from './hunt-store.js';

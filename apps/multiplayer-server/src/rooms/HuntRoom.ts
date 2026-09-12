@@ -32,7 +32,13 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { Client, Room } from 'colyseus';
+// `@colyseus/core` rather than the `colyseus` umbrella: the umbrella's CJS
+// bundle re-exports core through a wrapper that Node's ESM named-export
+// detection cannot see through, so `import { Room } from 'colyseus'` throws
+// "does not provide an export named 'Room'" under tsx/node (it only survives
+// bundlers). `Client` is an interface, so it is imported as a type.
+import { Room } from '@colyseus/core';
+import type { Client } from '@colyseus/core';
 import {
   assignRoutes,
   assertSharedDestination,

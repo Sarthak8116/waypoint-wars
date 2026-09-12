@@ -85,12 +85,22 @@ the decision. The asymmetry favours leniency: a false rejection is a real person
 standing outdoors in bad light retaking a photo; a false approval is 150 XP in a
 hackathon game.
 
-## D15 — OPEN ITEM for P7: submission/checkpoint binding
+## D15 — RESOLVED: submission/checkpoint binding
 `verifySubmission` trusts its caller about which checkpoint is active — only the
 Colyseus room knows the player's index. **The room must assert that
 `submission.checkpointId` equals the player's active checkpoint id before
 calling.** Without that assertion a client could submit a photo taken at
-checkpoint 1 against checkpoint 4's geofence. Not yet implemented.
+checkpoint 1 against checkpoint 4's geofence.
+
+**Implemented.** `rooms/guards.ts` ->
+`assertSubmissionMatchesActiveCheckpoint`, called in
+`HuntRoom.handleSubmitCheckpoint` BEFORE the checkpoint lookup, the geofence
+and the verification provider — so a mismatch reaches neither. The same guard
+gates `request_hint` and `request_instruction`, so a client cannot farm hints
+or instructions for checkpoints it has not reached. The test submits
+checkpoint 3's id WITH checkpoint 3's own coordinates (so the geofence would
+have passed it) and asserts the provider was never called, with a positive
+control alongside so the zero means something.
 
 ## D16 — OPEN ITEM: live Gemini path is unexercised
 Every verification test injects a fake client by design, so the real API path

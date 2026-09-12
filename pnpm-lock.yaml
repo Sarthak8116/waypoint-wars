@@ -26,6 +26,9 @@ importers:
 
   apps/multiplayer-server:
     dependencies:
+      '@colyseus/core':
+        specifier: ^0.15.57
+        version: 0.15.57(@colyseus/schema@2.0.37)
       '@colyseus/schema':
         specifier: ^2.0.35
         version: 2.0.37
@@ -66,6 +69,9 @@ importers:
       '@types/node':
         specifier: ^22.10.5
         version: 22.20.2
+      colyseus.js:
+        specifier: ^0.15.28
+        version: 0.15.28
       tsx:
         specifier: ^4.19.2
         version: 4.23.13

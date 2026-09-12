@@ -12,8 +12,9 @@
  */
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import http from 'node:http';
 import { boot, type ColyseusTestServer } from '@colyseus/testing';
-import { Server as ColyseusServer } from 'colyseus';
+import { Server as ColyseusServer } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import type { Room as ClientRoom } from 'colyseus.js';
 import {
@@ -61,9 +62,6 @@ class SpyProvider implements VerificationProvider {
 // Harness
 // ---------------------------------------------------------------------------
 
-/** `@colyseus/testing` hardcodes this port when handed a Server instance. */
-const TEST_PORT = 2568;
-
 let colyseus: ColyseusTestServer;
 let spy: SpyProvider;
 
@@ -75,10 +73,36 @@ interface Harness {
   guest: ClientRoom<HuntRoomState>;
 }
 
+/**
+ * Every `ServerMessage` type, so colyseus.js does not warn about unhandled
+ * messages on every broadcast. Registering a no-op leaves `waitForMessage` and
+ * the leak assertions below working: handlers are additive.
+ */
+const SERVER_MESSAGE_TYPES = [
+  'hunt_started',
+  'checkpoint_unlocked',
+  'submission_result',
+  'hint_issued',
+  'instruction_issued',
+  'score_update',
+  'player_progress',
+  'player_region',
+  'leaderboard',
+  'hunt_finished',
+  'error',
+] as const;
+
+function silence(client: ClientRoom): ClientRoom {
+  for (const type of SERVER_MESSAGE_TYPES) client.onMessage(type, () => undefined);
+  return client;
+}
+
 async function setup(options: Record<string, unknown> = {}): Promise<Harness> {
   const room = await colyseus.createRoom<HuntRoomState>('hunt', options);
   const host = await colyseus.connectTo(room, { playerName: 'Ada', ...options });
   const guest = await colyseus.connectTo(room, { playerName: 'Linus', ...options });
+  silence(host as unknown as ClientRoom);
+  silence(guest as unknown as ClientRoom);
   return {
     room: room as unknown as HuntRoom,
     state: room.state,
@@ -152,7 +176,7 @@ beforeAll(async () => {
   // to the test runner, and an unexpected message on it kills the worker before
   // a single test reports. Passing a Server skips that path entirely.
   const gameServer = new ColyseusServer({
-    transport: new WebSocketTransport({ port: TEST_PORT }),
+    transport: new WebSocketTransport({ server: http.createServer() }),
     gracefullyShutdown: false,
   });
   gameServer.define('hunt', HuntRoom);
@@ -161,7 +185,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   resetVerificationProvider();
-  await colyseus.shutdown();
+  await colyseus?.shutdown();
 });
 
 beforeEach(() => {
@@ -461,6 +485,8 @@ describe('opponent privacy', () => {
 
     h.host.send('set_share_location', { enabled: false });
     await h.guest.waitForNextPatch();
+    expect(h.guest.state.players.get(h.host.sessionId)?.sharingLocation).toBe(false);
+    expect(h.guest.state.players.get(h.host.sessionId)?.region.hasRegion).toBe(false);
 
     const region = h.guest.waitForMessage('player_region');
     const progress = h.guest.waitForMessage('player_progress');
@@ -470,13 +496,18 @@ describe('opponent privacy', () => {
     expect(regionMessage.region).toBeNull();
     expect(JSON.stringify(regionMessage)).not.toContain(String(RAW_LAT));
 
+    // Progress still flows: opting out hides WHERE you are, not WHETHER you
+    // are still in the race.
     const progressMessage = await progress;
     expect(progressMessage.totalCheckpoints).toBe(5);
     expect(typeof progressMessage.checkpointIndex).toBe('number');
 
-    await h.guest.waitForNextPatch();
+    // Deliberately no `waitForNextPatch` here: with sharing off, a location
+    // update changes nothing in the shared schema, so there is no next patch —
+    // which is itself the property under test.
     expect(h.guest.state.players.get(h.host.sessionId)?.region.hasRegion).toBe(false);
-    expect(h.guest.state.players.get(h.host.sessionId)?.sharingLocation).toBe(false);
+    // The server still holds the precise fix for its own geofencing.
+    expect(h.room.rawPositionForSession(h.host.sessionId)?.latitude).toBe(RAW_LAT);
   });
 
   it('keeps routes, clues, hints and reveals out of the shared state', async () => {
@@ -820,6 +851,7 @@ describe('team-race', () => {
     const b = await colyseus.connectTo(room, { playerName: 'Bob', teamName: 'Analysts' });
     const c = await colyseus.connectTo(room, { playerName: 'Cleo', teamName: 'Rivals' });
     const hunt = room as unknown as HuntRoom;
+    for (const client of [a, b, c]) silence(client as unknown as ClientRoom);
 
     const started = [
       (a as unknown as ClientRoom).waitForMessage('hunt_started'),
