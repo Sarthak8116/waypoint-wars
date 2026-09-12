@@ -134,8 +134,32 @@ function dealRoutes(pool: Place[], routeCount: number, stopsPerRoute: number): P
  * strictly reduces the spread. Greedy and bounded; it will not find an optimum
  * and does not need to.
  */
-function balanceRoutes(routes: Place[][], finish: Place): Place[][] {
-  const lengthOf = (stops: Place[]) => routeMeters([...stops, finish]);
+/**
+ * Nearest-neighbour ordering, starting from the first stop.
+ *
+ * Extracted because the balancer and the final assembly MUST agree on it.
+ * They used to disagree: the balancer measured the dealt order while the
+ * route was re-ordered into a path afterwards, so it spent forty passes
+ * optimising a distance nobody walks. Savannah came out 2227m / 1426m /
+ * 1098m — a 51% spread — from a balancer that believed it was done.
+ */
+export function orderPath(stops: Place[]): Place[] {
+  const remaining = [...stops];
+  const ordered: Place[] = [];
+  let current = remaining.shift();
+  if (!current) return ordered;
+  ordered.push(current);
+  while (remaining.length) {
+    remaining.sort((a, b) => haversineMeters(current!, a) - haversineMeters(current!, b));
+    current = remaining.shift()!;
+    ordered.push(current);
+  }
+  return ordered;
+}
+
+export function balanceRoutes(routes: Place[][], finish: Place): Place[][] {
+  // Measure what the player actually walks: ordered stops, then the finish.
+  const lengthOf = (stops: Place[]) => routeMeters([...orderPath(stops), finish]);
   const spread = (rs: Place[][]) => {
     const ls = rs.map(lengthOf);
     return Math.max(...ls) - Math.min(...ls);
@@ -173,22 +197,11 @@ function balanceRoutes(routes: Place[][], finish: Place): Place[][] {
     if (!improved) break;
   }
 
-  // Re-order each route as a path after swapping.
-  return working.map((stops) => {
-    const remaining = [...stops];
-    const ordered: Place[] = [];
-    let current = remaining.shift()!;
-    ordered.push(current);
-    while (remaining.length) {
-      remaining.sort((a, b) => haversineMeters(current, a) - haversineMeters(current, b));
-      current = remaining.shift()!;
-      ordered.push(current);
-    }
-    return ordered;
-  });
+  // Same ordering the balancer measured, so the two cannot drift apart.
+  return working.map(orderPath);
 }
 
-function routeMeters(stops: Array<{ latitude: number; longitude: number }>): number {
+export function routeMeters(stops: Array<{ latitude: number; longitude: number }>): number {
   let total = 0;
   for (let i = 1; i < stops.length; i++) total += haversineMeters(stops[i - 1]!, stops[i]!);
   return Math.round(total);
