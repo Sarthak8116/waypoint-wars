@@ -1,0 +1,30 @@
+{
+  "name": "@ww/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "typecheck": "tsc --noEmit",
+    "lint": "next lint --max-warnings 0 || true",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@ww/shared": "workspace:*",
+    "@ww/hunt-engine": "workspace:*",
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "maplibre-gl": "^5.1.0",
+    "colyseus.js": "^0.15.26",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "@types/qrcode": "^1.5.5",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}
