@@ -199,7 +199,8 @@ function SoloHunt({
   }, [hunt, location, firstCheckpoint]);
 
   const handleSubmit = useCallback(async () => {
-    if (!image) return;
+    // A null photo is allowed in Demo Mode and is handled honestly downstream:
+    // the model is not called and the result is labelled "photo NOT verified".
     await hunt.submit(image, answer, API_URL);
 
     // Clear ONLY the photo, and only so "Retake photo" is the obvious next
@@ -532,7 +533,14 @@ function SoloPanel(props: {
   // ---------------------------------------------------------------- arrived
   if (props.withinRadius) {
     const rejected = lastOutcome?.outcome === 'rejected';
-    const ready = Boolean(props.image) && props.answer.trim().length > 0;
+    const hasAnswer = props.answer.trim().length > 0;
+    /**
+     * Demo Mode runs on a laptop with no camera and nothing to photograph, so
+     * requiring a file there makes the whole flow undemonstrable. The photo
+     * stays optional ONLY in Demo Mode, and the result is labelled unverified.
+     */
+    const photoOptional = location.source === 'demo';
+    const ready = hasAnswer && (photoOptional || Boolean(props.image));
 
     return (
       <div className="sheet">
@@ -610,8 +618,23 @@ function SoloPanel(props: {
           onClick={props.onSubmit}
           disabled={!ready || verifying}
         >
-          {verifying ? 'Verifying…' : ready ? 'Submit proof' : 'Add a photo and an answer'}
+          {verifying
+            ? 'Verifying…'
+            : ready
+              ? props.image || !photoOptional
+                ? 'Submit proof'
+                : 'Submit answer only'
+              : photoOptional
+                ? 'Type your answer'
+                : 'Add a photo and an answer'}
         </button>
+
+        {photoOptional && !props.image && hasAnswer && (
+          <p className="dim" style={{ fontSize: 13, textAlign: 'center', margin: '8px 0 0' }}>
+            No photo — this will be scored on the answer alone and marked
+            <strong> not verified</strong>.
+          </p>
+        )}
 
         {!rejected && (
           <button

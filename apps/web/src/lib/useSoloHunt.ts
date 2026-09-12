@@ -41,6 +41,9 @@ export interface SubmissionOutcomeView {
 
 const reducer = (state: HuntState, action: HuntAction): HuntState => transition(state, action);
 
+/** Thrown to jump the verification call when there is no photo to judge. */
+class SkipVerification extends Error {}
+
 export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
   const checkpointIds = useMemo(() => checkpoints.map((c) => c.id), [checkpoints]);
 
@@ -114,8 +117,15 @@ export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
    * unreachable the run falls back to local answer-only checking, clearly
    * labeled, so a demo is never blocked by a dead backend.
    */
+  /**
+   * @param imageDataUrl A captured photo, or null in Demo Mode where there is
+   *   no camera and no landmark to stand in front of. A null photo is NEVER
+   *   treated as a pass: the model is not called at all, the submission is
+   *   marked degraded, and every surface says the photo was not verified.
+   *   The deterministic answer check still decides the outcome.
+   */
   const submit = useCallback(
-    async (imageDataUrl: string, answer: string, apiUrl: string) => {
+    async (imageDataUrl: string | null, answer: string, apiUrl: string) => {
       const cp = activeCheckpoint;
       if (!cp || !activeProgress) return;
 
@@ -139,7 +149,15 @@ export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
       let verdict: SubmissionVerdict | null = null;
       let degraded: string | null = null;
 
+      if (!imageDataUrl) {
+        // No photo means nothing to verify. Say so loudly rather than
+        // pretending a check happened.
+        degraded = 'no photo submitted (Demo Mode)';
+        console.warn('[verify] no photo — answer-only, photo NOT verified.');
+      }
+
       try {
+        if (!imageDataUrl) throw new SkipVerification();
         const res = await fetch(`${apiUrl}/api/verify`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -163,8 +181,10 @@ export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
           console.error(`[verify] photo verification unavailable (${degraded}) — answer-only.`);
         }
       } catch (err) {
-        degraded = err instanceof Error ? err.message : 'network error';
-        console.error(`[verify] photo verification unreachable (${degraded}) — answer-only.`);
+        if (!(err instanceof SkipVerification)) {
+          degraded = err instanceof Error ? err.message : 'network error';
+          console.error(`[verify] photo verification unreachable (${degraded}) — answer-only.`);
+        }
       }
 
       const result: VerificationResult | null = verdict?.verification ?? null;
