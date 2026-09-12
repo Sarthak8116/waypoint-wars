@@ -110,6 +110,22 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.2)
 
+  data:
+    dependencies:
+      '@ww/shared':
+        specifier: workspace:*
+        version: link:../packages/shared
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.20.2
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.13
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   packages/hunt-engine:
     dependencies:
       '@ww/shared':
