@@ -220,14 +220,22 @@ export class HudScene extends Phaser.Scene {
   // -------------------------------------------------------------------------
 
   private onXpAwarded(amount: number, total: number, label?: string): void {
-    flyXpToCounter(this, {
-      amount,
-      label,
-      fromX: this.scale.width / 2,
-      fromY: this.scale.height * 0.62,
-      toX: this.xpText.x + this.xpText.displayWidth / 2,
-      toY: this.xpText.y + this.xpText.displayHeight / 2,
-    });
+    /**
+     * Amount 0 means "the total moved, nobody scored" — a resync after a
+     * remount, a reconnect, or React mirroring server state into the HUD.
+     * Flying a "+0" chip across the map for those was pure noise, and it
+     * happened on every single sync: it was visible mid-demo.
+     */
+    if (amount !== 0) {
+      flyXpToCounter(this, {
+        amount,
+        label,
+        fromX: this.scale.width / 2,
+        fromY: this.scale.height * 0.62,
+        toX: this.xpText.x + this.xpText.displayWidth / 2,
+        toY: this.xpText.y + this.xpText.displayHeight / 2,
+      });
+    }
     // Retarget from wherever the number currently sits: a second award 200ms
     // later interrupts the first rather than queuing behind it.
     tweenXpCounter(this, this.xpSlot, {

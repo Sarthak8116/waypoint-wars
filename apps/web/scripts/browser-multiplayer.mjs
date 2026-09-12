@@ -105,8 +105,13 @@ async function main() {
     const code = heading.trim().match(/^[A-Z0-9]{6}$/)?.[0] ?? '';
     check('a six-character code is displayed', code.length === 6, code);
 
-    const qr = await host.page.locator('img[alt*="QR"]').count();
-    check('QR code rendered', qr > 0);
+    // The QR comes from a dynamic import('qrcode') plus an async toDataURL, so
+    // counting the instant the code appears races the encoder. Wait for it.
+    const qr = await host.page
+      .waitForSelector('img[alt*="QR"]', { timeout: 15_000 })
+      .then(() => true)
+      .catch(() => false);
+    check('QR code rendered', qr);
     await host.page.screenshot({ path: resolve(SHOT_DIR, '8-lobby-qr.png') });
 
     // --- guest joins by typing the code ----------------------------------

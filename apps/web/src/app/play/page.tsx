@@ -142,19 +142,35 @@ function SoloHunt({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkpoints.length]);
 
+  /**
+    * Last total pushed to the HUD, so an award can be emitted as a DELTA.
+    * Emitting amount: 0 every time meant the "+225 XP" chip — the payoff
+    * animation — never once played.
+    */
+  const lastXp = useRef(0);
+
   // Push XP and progress into the HUD. Phaser stores none of this.
   useEffect(() => {
+    const delta = state.totalXp - lastXp.current;
+    lastXp.current = state.totalXp;
     bridgeRef.current?.emit({
       type: 'XP_AWARDED',
-      amount: 0,
+      amount: delta,
       total: state.totalXp,
     });
+    /**
+     * Completed, not active. They differ for the whole reward screen: the
+     * reveal is showing, XP has been awarded, and `activeIndex` has not moved
+     * yet because the player has not tapped "Next clue". Keying the pips off
+     * the index made the payoff screen read "0/5 checkpoints" at the exact
+     * moment the player had just cleared one.
+     */
     bridgeRef.current?.emit({
       type: 'PROGRESS_UPDATE',
-      completed: state.activeIndex,
+      completed: state.reveals.length,
       total: checkpoints.length,
     });
-  }, [state.totalXp, state.activeIndex, checkpoints.length]);
+  }, [state.totalXp, state.activeIndex, state.reveals.length, checkpoints.length]);
 
   // --- Arrival detection ---------------------------------------------------
   const distanceToTarget =

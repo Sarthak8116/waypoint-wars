@@ -109,9 +109,14 @@ export default function RacePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Last total mirrored into the HUD, so awards arrive as a delta. */
+  const lastXp = useRef(0);
+
   // Mirror server-owned values into the HUD. Phaser stores none of them.
   useEffect(() => {
-    bridgeRef.current?.emit({ type: 'XP_AWARDED', amount: 0, total: view.xp });
+    const delta = view.xp - lastXp.current;
+    lastXp.current = view.xp;
+    bridgeRef.current?.emit({ type: 'XP_AWARDED', amount: delta, total: view.xp });
     bridgeRef.current?.emit({
       type: 'PROGRESS_UPDATE',
       completed: view.checkpointIndex,
