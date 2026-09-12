@@ -42,6 +42,7 @@ import {
   type HuntMeta,
 } from '@/lib/creatorDraft';
 import { validateDraft } from '@/lib/creatorValidation';
+import { CREATOR_PREVIEW_KEY, clearCreatorPreview } from '@/lib/huntData';
 import CheckpointForm from '@/components/creator/CheckpointForm';
 import RouteEditor from '@/components/creator/RouteEditor';
 import ValidationPanel from '@/components/creator/ValidationPanel';
@@ -84,6 +85,8 @@ export default function CreatorPage() {
   const [publishing, setPublishing] = useState(false);
   const [publishMessage, setPublishMessage] = useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [publishDetails, setPublishDetails] = useState<string[]>([]);
+  const [previewing, setPreviewing] = useState(false);
 
   // --- Boot: restored draft, else the curated seed, else blank -------------
   useEffect(() => {
@@ -100,6 +103,16 @@ export default function CreatorPage() {
       setDraft(next);
       setActiveRouteId(next.routes[0]?.id ?? null);
       setNotice(message);
+    }
+  }, []);
+
+  // A preview key left behind by an earlier session silently overrides /play,
+  // so the indicator has to reflect reality at boot, not just what we wrote.
+  useEffect(() => {
+    try {
+      setPreviewing(window.localStorage.getItem(CREATOR_PREVIEW_KEY) !== null);
+    } catch {
+      setPreviewing(false);
     }
   }, []);
 
@@ -222,6 +235,41 @@ export default function CreatorPage() {
   }, []);
 
   /**
+   * Preview: park the draft where `/play` reads it, THEN navigate.
+   *
+   * The order is load-bearing. Navigating first would walk whatever was in
+   * the key before — and stale content that looks plausible is far worse than
+   * a visible error, because nothing about it says "this is not your draft".
+   */
+  const handlePreview = useCallback(() => {
+    if (!draft || !report?.publishable) return;
+    const bundle = toBundle(draft);
+    if (!bundle) {
+      setNotice('Designate a shared final destination before previewing.');
+      return;
+    }
+    try {
+      window.localStorage.setItem(CREATOR_PREVIEW_KEY, JSON.stringify(bundle));
+    } catch {
+      // Almost always the quota: reference images are data URLs and the budget
+      // is ~5MB. Do NOT open /play — it would show stale or published content.
+      setNotice(
+        'Preview needs less data than this draft carries — remove reference images, or use Export JSON and drop the file in as data/pittsburgh-hunts.json.',
+      );
+      return;
+    }
+    setPreviewing(true);
+    setNotice(null);
+    window.open('/play', '_blank', 'noopener');
+  }, [draft, report]);
+
+  const handleClearPreview = useCallback(() => {
+    clearCreatorPreview();
+    setPreviewing(false);
+    setNotice('Preview cleared — /play is back on published content.');
+  }, []);
+
+  /**
    * Publish. The endpoint may not exist yet, and that must not look like a
    * crash: a 404 or a dead socket is reported as "use Export instead", which
    * is a complete workflow on its own.
@@ -235,13 +283,26 @@ export default function CreatorPage() {
     }
     setPublishing(true);
     setPublishMessage(null);
+    setPublishDetails([]);
     try {
       const res = await fetch(`${API_URL}/api/hunts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bundle),
       });
-      if (res.status === 404) {
+      if (res.status === 422) {
+        // The server validates route-length equality and shared-finish
+        // agreement independently of our panel. Its wording is the actionable
+        // one, so it is rendered verbatim rather than re-summarized.
+        const body = (await res.json().catch(() => null)) as
+          | { error?: string; details?: string[] }
+          | null;
+        setPublishDetails(Array.isArray(body?.details) ? body.details : []);
+        setPublishMessage({
+          tone: 'bad',
+          text: body?.error ?? 'The server rejected this hunt (422).',
+        });
+      } else if (res.status === 404) {
         setPublishMessage({
           tone: 'bad',
           text: 'The publish endpoint is not available on the server yet. Use Export JSON and drop the file in as data/pittsburgh-hunts.json.',
@@ -249,7 +310,14 @@ export default function CreatorPage() {
       } else if (!res.ok) {
         setPublishMessage({ tone: 'bad', text: `Publish failed (HTTP ${res.status}). Export JSON instead.` });
       } else {
-        setPublishMessage({ tone: 'ok', text: 'Published. Open Preview to walk it.' });
+        const body = (await res.json().catch(() => null)) as
+          | { huntId?: string; routes?: number; checkpoints?: number; storage?: string }
+          | null;
+        const where = body?.storage ? ` (${body.storage})` : '';
+        setPublishMessage({
+          tone: 'ok',
+          text: `Published ${body?.routes ?? draft.routes.length} routes and ${body?.checkpoints ?? draft.checkpoints.length} checkpoints${where}. Clear the preview to walk the published version.`,
+        });
       }
     } catch {
       setPublishMessage({
@@ -312,13 +380,47 @@ export default function CreatorPage() {
         <button className="btn" style={{ minHeight: 36, fontSize: 13 }} onClick={handleNew}>
           New
         </button>
-        <a className="btn" style={{ minHeight: 36, fontSize: 13 }} href="/play" target="_blank" rel="noreferrer">
+        <button
+          className="btn"
+          style={{ minHeight: 36, fontSize: 13 }}
+          onClick={handlePreview}
+          disabled={!report.publishable}
+          title={
+            report.publishable
+              ? 'Park this draft where /play reads it, then open it'
+              : 'Previewing a draft that fails a hard rule throws inside route assignment'
+          }
+        >
           Preview ↗
-        </a>
+        </button>
         <a className="btn" style={{ minHeight: 36, fontSize: 13 }} href="/">
           Home
         </a>
       </header>
+
+      {previewing && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            flexWrap: 'wrap',
+            margin: '0 12px 8px',
+            padding: '6px 12px',
+            borderRadius: 10,
+            border: '1px solid var(--warn)',
+            background: 'rgba(251,191,36,0.14)',
+            color: 'var(--warn)',
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+        >
+          <span>▶ Previewing draft — /play is walking this draft, not published content.</span>
+          <button className="btn" style={{ minHeight: 30, fontSize: 12 }} onClick={handleClearPreview}>
+            Clear preview
+          </button>
+        </div>
+      )}
 
       {(notice || saveError) && (
         <p className="muted" style={{ fontSize: 12, margin: '0 12px 8px' }}>
@@ -384,6 +486,7 @@ export default function CreatorPage() {
             report={report}
             publishing={publishing}
             publishMessage={publishMessage}
+            publishDetails={publishDetails}
             onPublish={() => void handlePublish()}
             onSelectCheckpoint={setSelectedId}
           />

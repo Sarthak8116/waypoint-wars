@@ -14,6 +14,8 @@ export interface ValidationPanelProps {
   report: ValidationReport;
   publishing: boolean;
   publishMessage: { tone: 'ok' | 'bad'; text: string } | null;
+  /** Per-rule failures from the server's own 422. Rendered verbatim. */
+  publishDetails: string[];
   onPublish: () => void;
   onSelectCheckpoint: (id: string) => void;
 }
@@ -150,12 +152,29 @@ export default function ValidationPanel(props: ValidationPanelProps) {
           style={{
             fontSize: 12,
             lineHeight: 1.45,
-            marginBottom: 0,
+            marginBottom: props.publishDetails.length ? 6 : 0,
             color: props.publishMessage.tone === 'ok' ? 'var(--good)' : 'var(--bad)',
           }}
         >
           {props.publishMessage.text}
         </p>
+      )}
+
+      {props.publishDetails.length > 0 && (
+        // The server re-checks route-length equality and shared-finish
+        // agreement itself. When it disagrees with this panel, IT is right —
+        // so its wording is shown as-is rather than reworded.
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {props.publishDetails.map((detail, i) => (
+            <li
+              key={`${detail}-${i}`}
+              style={{ fontSize: 12, lineHeight: 1.45, marginBottom: 4, display: 'flex', gap: 6 }}
+            >
+              <span style={{ color: 'var(--bad)' }}>✖</span>
+              <span>{detail}</span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

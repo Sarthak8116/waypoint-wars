@@ -33,9 +33,9 @@ finish at the **same** destination, and see a leaderboard + animated route repla
 - [x] **P7 — Colyseus multiplayer**
 - [x] **P8 — Persistence (Mongo adapter + file-backed default)**
 - [ ] **P9 — Route replay + demo mode**
-- [ ] **P10 — Creator dashboard**
+- [x] **P10 — Creator dashboard**
 - [ ] **P11 — Optional: Querit + ElevenLabs**
-- [ ] **P12 — Demo hardening**
+- [x] **P12 — Demo hardening**
 
 ---
 

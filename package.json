@@ -3,14 +3,18 @@
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@9.15.4",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
-    "seed": "pnpm --filter @ww/multiplayer-server seed"
+    "seed": "pnpm --filter @ww/multiplayer-server seed",
+    "demo:check": "pnpm --filter @ww/multiplayer-server check:demo",
+    "demo:reset": "rm -rf .data && pnpm --filter @ww/data build && pnpm --filter @ww/data validate && node apps/web/scripts/sync-content.mjs"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

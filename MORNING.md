@@ -109,8 +109,19 @@ the actual flow before you present it.
 
 ```bash
 pnpm install
-pnpm dev          # web :3000 + server :2567
+pnpm dev            # web :3000 + server :2567
+pnpm demo:check     # 19 checks — run this BEFORE you present
 ```
+
+`demo:check` verifies the things that actually broke during this build, not the
+things that are easy to check: that Gemini is live rather than mocked, that
+every route serves, that the content is the real hunt and not the placeholder,
+that all three routes share a finish and are the same length, and that the
+public API leaks no answers or reveals. A green `pnpm build` proved nothing
+three separate times tonight.
+
+`pnpm demo:reset` rebuilds content from the seed, re-validates it, and clears
+the local persistence snapshot.
 
 | Route | What to show |
 | --- | --- |

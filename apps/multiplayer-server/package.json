@@ -12,7 +12,8 @@
     "lint": "echo 'lint: server ok'",
     "test": "vitest run",
     "e2e": "node scripts/e2e-race.mjs",
-    "check:gemini": "tsx scripts/live-gemini-check.mjs"
+    "check:gemini": "tsx scripts/live-gemini-check.mjs",
+    "check:demo": "node scripts/demo-check.mjs"
   },
   "dependencies": {
     "@colyseus/core": "^0.15.57",
