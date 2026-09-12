@@ -189,7 +189,10 @@ pnpm --filter @ww/multiplayer-server e2e:full   # a COMPLETE race, both players
 pnpm --filter @ww/multiplayer-server e2e:team   # team mode: shared route + score
 pnpm --filter @ww/multiplayer-server e2e:reconnect  # phone locks mid-hunt
 pnpm --filter @ww/multiplayer-server e2e:hints      # hints actually cost XP
+pnpm --filter @ww/multiplayer-server e2e:publish    # creator publish -> playable
 ```
+
+The e2e suites write to `.data/`. `pnpm demo:reset` clears it.
 
 `e2e:full` is the one that proves the pitch: two players walk different routes
 to completion, converge on The Point, and get an ordered leaderboard. Run it

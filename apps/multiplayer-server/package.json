@@ -17,7 +17,8 @@
     "e2e:full": "node scripts/e2e-full-race.mjs",
     "e2e:team": "node scripts/e2e-team-race.mjs",
     "e2e:reconnect": "node scripts/e2e-reconnect.mjs",
-    "e2e:hints": "node scripts/e2e-hints.mjs"
+    "e2e:hints": "node scripts/e2e-hints.mjs",
+    "e2e:publish": "node scripts/e2e-publish-play.mjs"
   },
   "dependencies": {
     "@colyseus/core": "^0.15.57",
