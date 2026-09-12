@@ -22,7 +22,7 @@ import {
   type Checkpoint,
   type Route,
 } from '@ww/shared';
-import { findLandmarks, geocode, PlacesError, type Place } from './places.js';
+import { findLandmarks, geocode, PlacesError, type Place, type GeocodedPlace } from './places.js';
 import { createDrafter, type Drafter, DRAFT_MODEL_ID } from './draft.js';
 
 export interface GenerateRequest {
@@ -194,6 +194,85 @@ function routeMeters(stops: Array<{ latitude: number; longitude: number }>): num
   return Math.round(total);
 }
 
+/**
+ * Pick a place a group of strangers can actually be told to meet at.
+ *
+ * "Everyone starts from the same location" is a core mechanic, but generated
+ * hunts used the geocoded city centroid named after the city — so a Savannah
+ * hunt told four teams to "gather at Savannah", which is a coordinate, not a
+ * meeting point. Pittsburgh's hand-authored hunt says "Market Square — meet by
+ * the fountain in the middle of the square", and generated hunts should be no
+ * worse.
+ *
+ * Wants an OPEN, PUBLIC, findable space — a square, park, plaza or fountain —
+ * rather than the highest-scoring landmark, which is usually a building
+ * interior nobody can loiter outside of. Deliberately excludes anything used
+ * as a checkpoint: the gathering point is announced by name, so using one
+ * would hand every player a free clue.
+ */
+const GATHERING_SCORES: Array<[string, string | null, number]> = [
+  ['place', 'square', 10],
+  ['amenity', 'marketplace', 9],
+  ['leisure', 'park', 8],
+  ['amenity', 'fountain', 7],
+  ['leisure', 'common', 6],
+  ['landuse', 'village_green', 6],
+  ['highway', 'pedestrian', 4],
+];
+
+/**
+ * Only OPEN SPACES qualify, which is why tourism=attraction and
+ * historic=memorial are absent: they are landmarks, not places to stand
+ * around waiting for four other people. Left in, Charleston picked "Model of
+ * the Civil War Submarine, H.L. Hunley" as its gathering point. When nothing
+ * qualifies, the honest centroid fallback is better than confidently naming
+ * something nobody can assemble at.
+ */
+
+export function pickGatheringPoint(
+  landmarks: Place[],
+  excludeIds: Set<string>,
+  centre: GeocodedPlace,
+): { name: string; latitude: number; longitude: number; instructions: string } {
+  let best: { place: Place; score: number } | null = null;
+
+  for (const place of landmarks) {
+    if (excludeIds.has(place.id)) continue;
+
+    let score = 0;
+    for (const [key, value, points] of GATHERING_SCORES) {
+      const tag = place.tags[key];
+      if (tag && (value === null || tag === value)) score += points;
+    }
+    if (score === 0) continue;
+
+    // Central is better: everyone walks out from here, so a gathering point on
+    // the edge makes one route much longer than the rest.
+    score -= place.distanceMeters / 1000;
+
+    if (!best || score > best.score) best = { place, score };
+  }
+
+  if (!best) {
+    // No open space found. The centroid is a poor meeting point, so say so
+    // rather than dressing it up as one.
+    return {
+      name: centre.displayName.split(',')[0]!.trim(),
+      latitude: centre.latitude,
+      longitude: centre.longitude,
+      instructions:
+        'No public square was found nearby — agree on an exact spot before you start.',
+    };
+  }
+
+  return {
+    name: best.place.name,
+    latitude: best.place.latitude,
+    longitude: best.place.longitude,
+    instructions: `Meet at ${best.place.name}. Everyone starts here, then splits up.`,
+  };
+}
+
 export interface GenerateOptions {
   drafter?: Drafter;
   /** Progress callback, so a UI can show what is happening during the wait. */
@@ -269,6 +348,10 @@ export async function generateHunt(
 
   const finishCheckpoint = drafted.get(finishPlace.id)!;
 
+  // After drafting, so every checkpoint id is known and none can be reused as
+  // the announced gathering point.
+  const gathering = pickGatheringPoint(landmarks, new Set(unique.keys()), centre);
+
   // --- 4. assemble ---------------------------------------------------------
   const huntId = `hunt_gen_${Date.now().toString(36)}`;
 
@@ -313,13 +396,8 @@ export async function generateHunt(
     area: centre.displayName.split(',').slice(1, 2).join('').trim() || undefined,
     theme,
     duration,
-    description: `A generated walking hunt around ${centre.displayName.split(',')[0]!.trim()}. Everyone starts together, walks a different route, and finishes at ${finishPlace.name}.`,
-    startLocation: {
-      name: centre.displayName.split(',')[0]!.trim(),
-      latitude: centre.latitude,
-      longitude: centre.longitude,
-      instructions: 'Gather here, split into teams, and set off.',
-    },
+    description: `A generated walking hunt around ${centre.displayName.split(',')[0]!.trim()}. Everyone starts together at ${gathering.name}, walks a different route, and finishes at ${finishPlace.name}.`,
+    startLocation: gathering,
     finalDestination: finishCheckpoint,
     routeIds: routes.map((r) => r.id),
     // NEVER auto-published. Generated history must be reviewed by a human
