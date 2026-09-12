@@ -146,6 +146,20 @@ export interface Route {
   approxDurationSeconds: number;
 }
 
+/**
+ * The `image` value a client sends when there is no photo to send.
+ *
+ * Demo Mode runs on a laptop, indoors, nowhere near the landmark. Without an
+ * agreed value for "there is deliberately no photo here", the flow the product
+ * is judged on cannot be completed at all.
+ *
+ * It is not a bypass. The server honours it only when the deployment sets
+ * ALLOW_PHOTOLESS_SUBMISSIONS, the geofence and the deterministic answer check
+ * still decide the outcome, and the resulting verdict says in plain words that
+ * the photo was NOT verified.
+ */
+export const NO_PHOTO_SENTINEL = 'demo:no-photo';
+
 export interface Hunt {
   id: string;
   title: string;

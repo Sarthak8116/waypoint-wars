@@ -38,3 +38,16 @@ export function setVerificationProviderForTesting(provider: VerificationProvider
 export function resetVerificationProvider(): void {
   selection = null;
 }
+
+
+/**
+ * Whether this deployment accepts a photoless Demo Mode submission.
+ *
+ * Off unless `ALLOW_PHOTOLESS_SUBMISSIONS=true`. It is a deployment decision,
+ * not a per-request one: a client must never be able to talk the server out of
+ * requiring a photo. A run accepted this way is labelled unverified in the
+ * verdict, the message and every screen that renders it.
+ */
+export function allowPhotoless(): boolean {
+  return process.env.ALLOW_PHOTOLESS_SUBMISSIONS === 'true';
+}

@@ -51,7 +51,7 @@ import { initRepository, validateHuntBundle, type HuntRepository } from './persi
 import { verifySubmission } from '@ww/verification';
 import { generateHunt, PlacesError } from '@ww/content';
 import { haversineMeters } from '@ww/shared';
-import { getVerificationProvider } from './verification-provider.js';
+import { getVerificationProvider, allowPhotoless } from './verification-provider.js';
 import { ensureSeeded } from './seed.js';
 import { HuntRoom } from './rooms/HuntRoom.js';
 import { isValidRoomCode, roomCodes } from './rooms/room-codes.js';
@@ -99,6 +99,10 @@ app.get('/health', (_req, res) => {
       storage: repository.kind,
       elevenlabs: process.env.ELEVENLABS_API_KEY ? 'live' : 'disabled',
       querit: process.env.QUERIT_API_KEY ? 'live' : 'mocked',
+      // Advertised so the client can offer the photoless Demo Mode path ONLY
+      // where the server would actually accept it. Without this the race
+      // screen would enable a button that always fails.
+      photoless: allowPhotoless() ? 'enabled' : 'disabled',
     },
   });
 });
@@ -213,6 +217,7 @@ app.post('/api/verify', (req, res) => {
         },
         checkpoint,
         getVerificationProvider(),
+        { allowPhotoless: allowPhotoless() },
       );
       res.json(verdict);
     } catch (err) {

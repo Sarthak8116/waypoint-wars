@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { haversineMeters, type LatLng, type LocationSample } from '@ww/shared';
+import { haversineMeters, NO_PHOTO_SENTINEL, type LatLng, type LocationSample } from '@ww/shared';
 import { GameBridge, type GameHandle } from '@ww/game';
 import { useRoom } from '@/lib/RoomProvider';
 import { useLocation } from '@/lib/useLocation';
@@ -23,6 +23,8 @@ import BackButton from '@/components/BackButton';
 import ProgressBar from '@/components/ProgressBar';
 
 const HuntMap = dynamic(() => import('@/components/HuntMap'), { ssr: false });
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:2567';
 
 const LOCATION_PUSH_MS = 5_000;
 const TRAIL_SAMPLE_MS = 12_000;
@@ -55,6 +57,33 @@ export default function RacePage() {
   const [image, setImage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const arrivedRef = useRef(false);
+
+  /**
+   * Does THIS server accept a photoless Demo Mode submission?
+   *
+   * Asked rather than assumed. Offering the button where the server would
+   * refuse it turns a clearly disabled control into a submission that always
+   * fails, which is strictly worse. Defaults to false until /health answers.
+   */
+  const [photolessAllowed, setPhotolessAllowed] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(`${API_URL}/health`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((h: { integrations?: Record<string, string> } | null) => {
+        if (!cancelled) setPhotolessAllowed(h?.integrations?.photoless === 'enabled');
+      })
+      .catch(() => {
+        // Unreachable server: leave the photo required. Nothing is lost, since
+        // a submission could not reach it either.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** Demo Mode AND a server that accepts it. Both, or the photo is required. */
+  const photoOptional = location.source === 'demo' && photolessAllowed;
 
   // --- HUD ----------------------------------------------------------------
   const hudRef = useRef<HTMLDivElement | null>(null);
@@ -194,18 +223,22 @@ export default function RacePage() {
   }, [view.checkpointIndex]);
 
   const handleSubmit = useCallback(() => {
-    if (!image || !view.checkpoint || !location.position) return;
+    if (!view.checkpoint || !location.position) return;
+    // Demo Mode has no camera and nothing to photograph. The sentinel tells the
+    // server there is deliberately no photo; the server decides whether to
+    // accept that, and labels the result unverified either way.
+    if (!image && !photoOptional) return;
     setSubmitting(true);
     submitCheckpoint({
       checkpointId: view.checkpoint.id,
-      image,
+      image: image ?? NO_PHOTO_SENTINEL,
       latitude: location.position.latitude,
       longitude: location.position.longitude,
       observationAnswer: answer,
       randomizedInstruction: view.instruction ?? '',
       submittedAt: Date.now(),
     });
-  }, [image, answer, view.checkpoint, view.instruction, location.position, submitCheckpoint]);
+  }, [image, answer, view.checkpoint, view.instruction, location.position, photoOptional, submitCheckpoint]);
 
   useEffect(() => {
     if (view.lastMessage) setSubmitting(false);
@@ -441,14 +474,25 @@ export default function RacePage() {
               className="btn btn-lime btn-block"
               style={{ marginTop: 16, minHeight: 68, fontSize: 20 }}
               onClick={handleSubmit}
-              disabled={!image || !answer.trim() || submitting}
+              disabled={!answer.trim() || (!image && !photoOptional) || submitting}
             >
               {submitting
                 ? 'Verifying…'
-                : image && answer.trim()
-                  ? 'Submit proof'
-                  : 'Add a photo and an answer'}
+                : !answer.trim()
+                  ? photoOptional
+                    ? 'Type your answer'
+                    : 'Add a photo and an answer'
+                  : image
+                    ? 'Submit proof'
+                    : 'Submit answer only'}
             </button>
+
+            {photoOptional && !image && answer.trim() && (
+              <p className="dim" style={{ fontSize: 13, textAlign: 'center', margin: '8px 0 0' }}>
+                No photo — scored on the answer alone and marked
+                <strong> not verified</strong>.
+              </p>
+            )}
 
             {!view.lastMessage && (
               <button

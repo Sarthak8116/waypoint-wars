@@ -67,7 +67,7 @@ import { verifySubmission } from '@ww/verification';
 import { huntStore } from '../hunt-store.js';
 import { getRepository } from '../persistence/index.js';
 import { ensureSeeded } from '../seed.js';
-import { getVerificationProvider } from '../verification-provider.js';
+import { getVerificationProvider, allowPhotoless } from '../verification-provider.js';
 import { assertSubmissionMatchesActiveCheckpoint } from './guards.js';
 import { buildLeaderboard, type LeaderboardSource } from './leaderboard.js';
 import { roomCodes } from './room-codes.js';
@@ -745,6 +745,7 @@ export class HuntRoom extends Room<HuntRoomState> {
         hintUsed: progress?.hintUsed === true,
         incorrectAttempts: progress?.incorrectAttempts ?? 0,
         isFinalCheckpoint: isFinalCheckpointIndex(run, index),
+        allowPhotoless: allowPhotoless(),
       },
     );
 

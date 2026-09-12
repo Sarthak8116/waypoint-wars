@@ -5,6 +5,7 @@ import { MockVerificationProvider } from './mock-provider.js';
 import type { VerificationProvider } from './provider.js';
 import {
   DEFAULT_CONFIDENCE_THRESHOLD,
+  NO_PHOTO_SENTINEL,
   VERDICT_MESSAGES,
   verifySubmission,
 } from './verify-submission.js';
@@ -405,6 +406,87 @@ describe('verifySubmission', () => {
 
     const verdict = await verifySubmission(submission(), bare, fakeProvider(result()), OPTS);
     expect(verdict.reveal?.hiddenDetail).toBeUndefined();
+  });
+
+  // -------------------------------------------------------------------------
+  // Photoless Demo Mode submissions
+  //
+  // Demo Mode runs indoors on a laptop, so there is nothing to photograph. The
+  // escape hatch must unblock the flow WITHOUT ever becoming a way to skip
+  // verification — hence: off by default, answer still authoritative, geofence
+  // still first, and never described as "verified".
+  // -------------------------------------------------------------------------
+  describe('photoless submissions', () => {
+    it('is rejected when the deployment has not opted in', async () => {
+      const provider = fakeProvider(result());
+      const verdict = await verifySubmission(
+        submission({ image: NO_PHOTO_SENTINEL }),
+        CHECKPOINT,
+        provider,
+        OPTS,
+      );
+
+      expect(verdict.outcome).toBe('rejected');
+      expect(verdict.xpDelta).toBe(0);
+      // The model must not be paid to look at a photo that does not exist.
+      expect(provider.verify).not.toHaveBeenCalled();
+    });
+
+    it('scores on the answer alone when allowed, without calling the model', async () => {
+      const provider = fakeProvider(result());
+      const verdict = await verifySubmission(
+        submission({ image: NO_PHOTO_SENTINEL }),
+        CHECKPOINT,
+        provider,
+        { ...OPTS, allowPhotoless: true },
+      );
+
+      expect(verdict.outcome).toBe('approved');
+      expect(verdict.xpDelta).toBeGreaterThan(0);
+      expect(provider.verify).not.toHaveBeenCalled();
+    });
+
+    it('never claims the photo was verified', async () => {
+      const verdict = await verifySubmission(
+        submission({ image: NO_PHOTO_SENTINEL }),
+        CHECKPOINT,
+        fakeProvider(result()),
+        { ...OPTS, allowPhotoless: true },
+      );
+
+      expect(verdict.message).toBe(VERDICT_MESSAGES.approvedUnverified);
+      expect(verdict.message).toMatch(/NOT verified/i);
+      // The record of what we actually saw: nothing.
+      expect(verdict.verification.landmarkMatch).toBe(false);
+      expect(verdict.verification.requiredActionCompleted).toBe(false);
+      expect(verdict.verification.reason).toMatch(/no photo/i);
+    });
+
+    it('still rejects a wrong answer', async () => {
+      const verdict = await verifySubmission(
+        submission({ image: NO_PHOTO_SENTINEL, observationAnswer: 'seventeen' }),
+        CHECKPOINT,
+        fakeProvider(result()),
+        { ...OPTS, allowPhotoless: true },
+      );
+
+      expect(verdict.outcome).toBe('rejected');
+      expect(verdict.xpDelta).toBe(0);
+      expect(verdict.reveal).toBeUndefined();
+    });
+
+    it('still rejects a player who is not there', async () => {
+      const verdict = await verifySubmission(
+        // ~1.5km north — well outside the 50m radius.
+        submission({ image: NO_PHOTO_SENTINEL, latitude: CHECKPOINT.latitude + 0.0135 }),
+        CHECKPOINT,
+        fakeProvider(result()),
+        { ...OPTS, allowPhotoless: true },
+      );
+
+      expect(verdict.outcome).toBe('rejected');
+      expect(verdict.withinRadius).toBe(false);
+    });
   });
 });
 

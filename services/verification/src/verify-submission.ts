@@ -20,6 +20,7 @@
 import { scoreCheckpoint, emptyBreakdown, matchesAcceptedAnswer } from '@ww/hunt-engine';
 import {
   haversineMeters,
+  NO_PHOTO_SENTINEL,
   type Checkpoint,
   type CheckpointSubmission,
   type SubmissionVerdict,
@@ -47,9 +48,19 @@ import { inconclusiveResult, type VerificationInput, type VerificationProvider }
  */
 export const DEFAULT_CONFIDENCE_THRESHOLD = 0.55;
 
+// The sentinel itself lives in @ww/shared — the client has to send it, so it
+// is part of the contract, not of this service.
+export { NO_PHOTO_SENTINEL } from '@ww/shared';
+
 export interface VerifySubmissionOptions {
   /** Defaults to DEFAULT_CONFIDENCE_THRESHOLD. */
   confidenceThreshold?: number;
+  /**
+   * Accept a submission whose image is `NO_PHOTO_SENTINEL`, scoring it on the
+   * answer alone and labelling it unverified. Default false. A deployment that
+   * leaves this off behaves exactly as before: no photo, no submission.
+   */
+  allowPhotoless?: boolean;
   /**
    * Epoch ms when this checkpoint became active — the start of the speed-bonus
    * clock. Supplied by the state machine's `CheckpointProgress.activatedAt`.
@@ -77,6 +88,8 @@ export interface VerifySubmissionOptions {
  */
 export const VERDICT_MESSAGES = {
   approved: 'Verified. Checkpoint complete — your reveal is unlocked below.',
+  approvedUnverified:
+    'Answer accepted — the photo was NOT verified. Checkpoint complete, your reveal is unlocked below.',
   outsideRadius: "You're not close enough yet. Get nearer to the spot and submit again.",
   landmarkMismatch:
     "That doesn't look like the right landmark. Re-read the clue and make sure the place itself fills the frame.",
@@ -168,10 +181,31 @@ export async function verifySubmission(
   // A provider must not throw, but this service must survive one that does:
   // a crashed handler loses the submission entirely, which is worse for the
   // player than a rejection they can retry.
+  const photoless = submission.image === NO_PHOTO_SENTINEL;
+
+  // A photoless submission that was not explicitly allowed is a rejection, not
+  // an error — the sentinel must never be a way in on a server that did not
+  // opt into it.
+  if (photoless && !opts.allowPhotoless) {
+    return rejection(
+      inconclusiveResult('No photo was submitted.', false),
+      withinRadius,
+      distanceMeters,
+      'A photo is required at this checkpoint.',
+    );
+  }
+
   let verification: VerificationResult;
   try {
-    verification = await provider.verify(toVerificationInput(submission, checkpoint));
-    verification = normalizeResult(verification);
+    verification = photoless
+      ? // Nothing to look at, so the model is not called at all. Saying
+        // `landmarkMatch: false` here is the honest record: we did not see the
+        // landmark. `visualsPass` below is bypassed for this case alone.
+        inconclusiveResult(
+          'No photo was submitted — scored on the written answer alone. The photo was NOT verified.',
+          false,
+        )
+      : normalizeResult(await provider.verify(toVerificationInput(submission, checkpoint)));
   } catch {
     return rejection(
       inconclusiveResult('The verification provider failed to return a judgement.', false),
@@ -196,8 +230,11 @@ export async function verifySubmission(
   );
 
   const threshold = opts.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD;
-  const confident = verification.confidence >= threshold;
-  const visualsPass = verification.landmarkMatch && verification.requiredActionCompleted;
+  // A photoless submission has nothing to be confident about, so confidence is
+  // not consulted — otherwise every one would fall into `needs-review` and the
+  // demo would stall on a screen nobody can clear.
+  const confident = photoless || verification.confidence >= threshold;
+  const visualsPass = photoless || (verification.landmarkMatch && verification.requiredActionCompleted);
 
   if (!visualsPass || !answerCorrect) {
     return rejection(
@@ -261,7 +298,9 @@ export async function verifySubmission(
       sources: checkpoint.sources,
       ...(checkpoint.hiddenDetail ? { hiddenDetail: checkpoint.hiddenDetail } : {}),
     },
-    message: VERDICT_MESSAGES.approved,
+    // NEVER "Verified." for a submission nothing was verified in. A degraded
+    // pass that claims verification is the one thing this service must not do.
+    message: photoless ? VERDICT_MESSAGES.approvedUnverified : VERDICT_MESSAGES.approved,
   };
 }
 
