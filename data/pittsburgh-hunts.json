@@ -6,6 +6,13 @@
     "theme": "mixed",
     "duration": "city-quest",
     "description": "Three asymmetric trails through Downtown Pittsburgh — rivers and founding, steel and money, arts and discovery — all converging at the Point where two rivers become a third.",
+    "startLocation": {
+      "name": "Market Square",
+      "latitude": 40.4409,
+      "longitude": -80.0021,
+      "instructions": "Meet by the fountain in the middle of the square."
+    },
+    "area": "Downtown",
     "finalDestination": {
       "id": "final_point_fountain",
       "name": "The Point — Confluence Fountain",

@@ -11,6 +11,7 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { GameMode } from '@ww/shared';
 import { useRoom } from '@/lib/RoomProvider';
+import { loadHuntBundle, type HuntBundle } from '@/lib/huntData';
 
 const HUNT_ID = 'hunt_three_rivers_run';
 
@@ -32,6 +33,11 @@ function Lobby() {
   const [code, setCode] = useState(params.get('code')?.toUpperCase() ?? '');
   const [mode, setMode] = useState<GameMode>('individual-race');
   const [qr, setQr] = useState<string | null>(null);
+  const [bundle, setBundle] = useState<HuntBundle | null>(null);
+
+  useEffect(() => {
+    void loadHuntBundle().then(setBundle);
+  }, []);
 
   // Render the join QR once a room exists.
   useEffect(() => {
@@ -96,6 +102,24 @@ function Lobby() {
               border: '3px solid var(--border)',
             }}
           />
+        )}
+
+        {bundle?.hunt.startLocation && (
+          <div className="card" style={{ marginBottom: 16, borderColor: 'var(--yellow)' }}>
+            <p className="label" style={{ color: 'var(--yellow)', marginBottom: 8 }}>
+              ★ Everyone starts here
+            </p>
+            <h3 style={{ marginBottom: 6 }}>{bundle.hunt.startLocation.name}</h3>
+            {bundle.hunt.startLocation.instructions && (
+              <p className="muted" style={{ fontSize: 15, margin: 0 }}>
+                {bundle.hunt.startLocation.instructions}
+              </p>
+            )}
+            <p className="dim" style={{ fontSize: 14, margin: '10px 0 0' }}>
+              You&apos;ll each get a different first clue from this spot, and you all
+              finish in the same place.
+            </p>
+          </div>
         )}
 
         <div className="card" style={{ marginBottom: 16 }}>

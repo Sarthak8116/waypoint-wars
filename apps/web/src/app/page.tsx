@@ -95,7 +95,7 @@ export default function Home() {
 
       <div>
         <p className="label" style={{ color: 'var(--pink)', marginBottom: 10 }}>
-          Downtown Pittsburgh
+          Any city · Pittsburgh loaded
         </p>
         <h1 className="display">
           Waypoint
@@ -103,8 +103,9 @@ export default function Home() {
           Wars
         </h1>
         <p className="muted" style={{ fontSize: 19, marginTop: 14, marginBottom: 0 }}>
-          Different routes. Same finish line. Everyone comes back with a
-          different story.
+          Drop into any city and build a hunt from the places around you. Everyone
+          starts together, walks a different route, and finishes in the same
+          place with a different story.
         </p>
       </div>
 

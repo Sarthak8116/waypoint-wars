@@ -1,9 +1,18 @@
 # Waypoint Wars
 
-A real-world historical scavenger hunt through Downtown Pittsburgh. Players walk
-**different routes**, solve challenges that require physically being there,
-verify with live photos, and converge on **the same finish** — The Point, where
-the Allegheny and Monongahela become the Ohio.
+Turn **any city** into a real-world scavenger hunt.
+
+Arrive somewhere new, create a hunt, and the app builds one from the landmarks
+around you. A group gathers at **one shared start**, splits into teams or
+individuals, and each player walks a **different route** — solving challenges
+that require physically being there, verified by live photo — until everyone
+converges on **the same finish** with a different story to tell.
+
+Routes may share a stop or two; what matters is that each player sees something
+the others did not.
+
+**Pittsburgh is the seeded example**, not the product: "Three Rivers Run" ships
+as hand-authored content so the whole loop is playable out of the box.
 
 It is a **web app**. Nothing to install: scan a QR code, the browser opens, you
 are in the game.

@@ -69,7 +69,7 @@ const HARD_RULES: Array<{ id: RuleId; label: string }> = [
   { id: 'structure', label: 'Hunt and routes are structurally complete' },
   { id: 'equal-length', label: 'Every route has the same number of checkpoints' },
   { id: 'shared-finish', label: 'All routes end at the same final destination' },
-  { id: 'exclusivity', label: 'No checkpoint appears in two routes' },
+  { id: 'exclusivity', label: 'Every route has at least one exclusive stop' },
   { id: 'content', label: 'Every checkpoint has all three layers filled in' },
   { id: 'answers-normalized', label: 'Accepted answers are lowercase and trimmed' },
 ];
@@ -142,21 +142,29 @@ function checkSharedFinish({ draft, byId, finishId }: Ctx): Finding[] {
   return [];
 }
 
+/**
+ * Overlap between routes is ALLOWED and often necessary — in a small town, or
+ * around one dense cluster of landmarks, forcing disjoint sets would push
+ * players somewhere boring purely to keep the sets apart.
+ *
+ * What the finish-line comparison actually needs is weaker: every route must
+ * show its player at least ONE thing the others did not. That is what makes
+ * "what did you find?" worth asking.
+ */
 function checkExclusivity(ctx: Ctx): Finding[] {
   const out: Finding[] = [];
   for (const route of ctx.draft.routes) {
-    for (const id of route.checkpointIds) {
-      if (id === ctx.finishId) continue;
-      const existing = ctx.owner.get(id);
-      if (existing && existing.id !== route.id) {
-        out.push({
-          message: `"${nameOf(ctx.byId.get(id))}" appears in both "${existing.label}" and "${route.label}".`,
-          checkpointId: id,
-          routeId: route.id,
-        });
-      } else if (!existing) {
-        ctx.owner.set(id, route);
-      }
+    const others = new Set(
+      ctx.draft.routes.filter((r) => r.id !== route.id).flatMap((r) => r.checkpointIds),
+    );
+    const exclusive = route.checkpointIds.filter(
+      (id) => id !== ctx.finishId && !others.has(id),
+    );
+    if (route.checkpointIds.length > 1 && exclusive.length === 0) {
+      out.push({
+        message: `"${route.label}" has no stop of its own — its player would have nothing different to compare at the finish.`,
+        routeId: route.id,
+      });
     }
   }
   return out;

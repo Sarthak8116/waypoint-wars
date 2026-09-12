@@ -185,6 +185,17 @@ const hunt: Hunt = {
   duration: 'city-quest',
   description:
     'Three asymmetric trails through Downtown Pittsburgh — rivers and founding, steel and money, arts and discovery — all converging at the Point where two rivers become a third.',
+  /**
+   * Where the group gathers before splitting up. Market Square is central,
+   * unmistakable, and roughly equidistant from all three first checkpoints.
+   */
+  startLocation: {
+    name: 'Market Square',
+    latitude: 40.4409,
+    longitude: -80.0021,
+    instructions: 'Meet by the fountain in the middle of the square.',
+  },
+  area: 'Downtown',
   finalDestination: finalCheckpoint,
   routeIds: routes.map((r) => r.id),
   published: true,

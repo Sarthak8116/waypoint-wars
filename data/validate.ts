@@ -55,18 +55,46 @@ if (finishes.size !== 1) {
   );
 }
 
-// --- Route exclusivity ------------------------------------------------------
-// The whole end-screen comparison rests on players having seen different
-// history. A checkpoint shared between two routes silently breaks that.
+// --- Route overlap ----------------------------------------------------------
+//
+// Overlap is ALLOWED. Routes are meant to be mostly different, not disjoint:
+// in a small town, or around one dense cluster of landmarks, forcing zero
+// overlap would either fail generation or push players somewhere boring just
+// to keep the sets apart.
+//
+// What the end screen needs is that each player saw something the others did
+// not — so this warns when routes converge too much, rather than failing.
 
-const seen = new Map<string, string>();
+const OVERLAP_WARN_RATIO = 0.5;
+
+const owners = new Map<string, string[]>();
 const finishId = bundle.hunt.finalDestination.id;
 for (const route of bundle.routes) {
   for (const id of route.checkpointIds) {
     if (id === finishId) continue;
-    const owner = seen.get(id);
-    if (owner) fail(`checkpoint "${id}" appears in both ${owner} and ${route.id}`);
-    else seen.set(id, route.id);
+    owners.set(id, [...(owners.get(id) ?? []), route.id]);
+  }
+}
+
+for (const route of bundle.routes) {
+  const body = route.checkpointIds.filter((id) => id !== finishId);
+  const shared = body.filter((id) => (owners.get(id)?.length ?? 0) > 1);
+  if (body.length && shared.length / body.length > OVERLAP_WARN_RATIO) {
+    warn(
+      `${route.id} shares ${shared.length}/${body.length} stops with another route — ` +
+        'players will come back with much the same story',
+    );
+  }
+}
+
+// Total overlap IS a failure: identical routes make the whole design pointless.
+for (const a of bundle.routes) {
+  for (const b of bundle.routes) {
+    if (a.id >= b.id) continue;
+    const sa = new Set(a.checkpointIds);
+    if (b.checkpointIds.every((id) => sa.has(id))) {
+      fail(`routes ${a.id} and ${b.id} are identical`);
+    }
   }
 }
 

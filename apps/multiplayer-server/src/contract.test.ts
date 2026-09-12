@@ -151,14 +151,31 @@ describe('hunt content invariants', () => {
     }
   });
 
-  it('no checkpoint is shared between routes except the finish', () => {
-    const seen = new Map<string, string>();
-    for (const route of bundle.routes) {
-      for (const id of route.checkpointIds) {
-        if (id === bundle.hunt.finalDestination.id) continue;
-        expect(seen.has(id), `${id} appears in ${seen.get(id)} and ${route.id}`).toBe(false);
-        seen.set(id, route.id);
+  /**
+   * Overlap between routes is ALLOWED — in a small town or a dense cluster,
+   * forcing disjoint sets would push players somewhere boring just to keep
+   * them apart. What must hold is that no two routes are IDENTICAL, because
+   * then nobody has anything different to compare at the finish.
+   */
+  it('no two routes are identical', () => {
+    for (const a of bundle.routes) {
+      for (const b of bundle.routes) {
+        if (a.id >= b.id) continue;
+        const sa = new Set(a.checkpointIds);
+        const identical = b.checkpointIds.every((id) => sa.has(id));
+        expect(identical, `${a.id} and ${b.id} are the same route`).toBe(false);
       }
+    }
+  });
+
+  it('every route contributes at least one stop the others do not have', () => {
+    const finish = bundle.hunt.finalDestination.id;
+    for (const route of bundle.routes) {
+      const others = new Set(
+        bundle.routes.filter((r) => r.id !== route.id).flatMap((r) => r.checkpointIds),
+      );
+      const unique = route.checkpointIds.filter((id) => id !== finish && !others.has(id));
+      expect(unique.length, `${route.id} has no exclusive discovery`).toBeGreaterThan(0);
     }
   });
 });

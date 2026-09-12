@@ -149,10 +149,28 @@ export interface Route {
 export interface Hunt {
   id: string;
   title: string;
+  /** Any city. Pittsburgh is the seeded example, not the product. */
   city: string;
+  /** Optional free-text region shown in listings, e.g. "Downtown". */
+  area?: string;
   theme: HuntTheme;
   duration: HuntDuration;
   description: string;
+  /**
+   * Where everyone gathers before splitting up.
+   *
+   * The group meets here, is divided into teams or individuals, and each
+   * player is then sent a DIFFERENT first clue from the same spot. Optional so
+   * older hunts still load; when absent the first checkpoint of each route is
+   * the de facto start.
+   */
+  startLocation?: {
+    name: string;
+    latitude: number;
+    longitude: number;
+    /** Shown on the lobby screen: "meet under the clock". */
+    instructions?: string;
+  };
   /** Every route in the hunt terminates here. */
   finalDestination: Checkpoint;
   routeIds: string[];
