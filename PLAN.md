@@ -27,7 +27,7 @@ finish at the **same** destination, and see a leaderboard + animated route repla
 - [x] **P1 — Foundation**
 - [ ] **P2 — Content: three Downtown routes**
 - [x] **P3 — Hunt engine (scoring + state machine)**
-- [ ] **P4 — Map + single-player vertical slice**
+- [x] **P4 — Map + single-player vertical slice**
 - [ ] **P5 — Gemini verification**
 - [ ] **P6 — Phaser HUD layer**
 - [ ] **P7 — Colyseus multiplayer**
