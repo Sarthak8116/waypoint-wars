@@ -269,3 +269,38 @@ Full detail in `README.md`; architecture rationale in `ARCHITECTURE.md`.
 
 `DEMO.md` has the presentation script, the questions you will get with honest
 answers, and a what-to-do-if-it-breaks table.
+
+---
+
+## Final verification — everything, from a clean build
+
+```
+check:browser        22/22        e2e                  17/17
+check:solo             8/8        e2e:full             11/11
+check:multiplayer    17/17        e2e:team             14/14
+check:creator        14/14        e2e:reconnect        11/11
+                                  e2e:hints            10/10
+unit tests             222        e2e:publish          11/11
+
+demo:check           19/19   ·   check:gemini  9/9, live, 2.6s
+```
+
+Working tree clean · content regenerates from the seed and validates ·
+whole workspace typechecks · web builds.
+
+### What found the bugs
+
+Fifteen bugs were found during this build. **Unit tests caught none of them.**
+
+| How | Count | Examples |
+| --- | --- | --- |
+| Driving the server | 9 | missing endpoint, blank screen on reconnect, runs never persisted |
+| Driving a browser | 4 | solo stuck on checkpoint 1, lobby never left the create screen |
+| Looking at screenshots | 2 | clipped banner, creator scrolling sideways |
+
+Two of them were fatal to a demo path and looked completely fine: solo mode
+never advanced past the first checkpoint, and the multiplayer lobby never
+showed the room it had just created. Both passed typecheck, tests and build.
+
+If you change anything today, run the suite that covers it. A green build has
+been wrong about this project fifteen times.
