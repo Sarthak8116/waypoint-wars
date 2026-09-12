@@ -70,6 +70,7 @@ export default function Home() {
         <a className="btn" href="/lobby">
           Multiplayer lobby
         </a>
+        <a className="btn" href="/creator">Creator</a>
       </div>
 
       <section className="card" style={{ marginTop: 8 }}>

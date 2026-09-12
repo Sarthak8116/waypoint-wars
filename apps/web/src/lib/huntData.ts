@@ -124,12 +124,59 @@ function normalize(raw: RawBundle): HuntBundle | null {
   return { hunt, routes, checkpoints, isFallback: false };
 }
 
+/**
+ * Where the creator dashboard parks a draft so `/play` can walk it before it
+ * is published. Exported so the creator writes the same key this reads — a
+ * mismatched string here fails silently, which is the worst kind of bug.
+ */
+export const CREATOR_PREVIEW_KEY = 'ww.creator.preview';
+
+/** Clears the preview, so `/play` returns to published content. */
+export function clearCreatorPreview(): void {
+  try {
+    window.localStorage.removeItem(CREATOR_PREVIEW_KEY);
+    cached = null;
+  } catch {
+    // Private window / blocked storage. Nothing to clear.
+  }
+}
+
+function readCreatorPreview(): HuntBundle | null {
+  // localStorage throws outright in a private window or with site data
+  // blocked, so every access is guarded rather than feature-detected.
+  try {
+    const raw = window.localStorage.getItem(CREATOR_PREVIEW_KEY);
+    if (!raw) return null;
+    const normalized = normalize(JSON.parse(raw) as RawBundle);
+    if (!normalized) {
+      console.error('[hunt-data] creator preview failed validation — ignoring it.');
+      return null;
+    }
+    return normalized;
+  } catch {
+    return null;
+  }
+}
+
 let cached: HuntBundle | null = null;
 
 export async function loadHuntBundle(): Promise<HuntBundle> {
   if (cached) return cached;
 
-  // Fetched at runtime rather than imported at build time, so a missing or
+  // 1. A creator preview takes precedence over everything.
+  //
+  // This is what makes P10's acceptance test true — "a checkpoint created in
+  // the UI is playable without a restart". The creator writes its draft here
+  // before opening /play, so an UNPUBLISHED hunt can be walked immediately.
+  // Publishing is a separate, deliberate act.
+  const preview = readCreatorPreview();
+  if (preview) {
+    console.info('[hunt-data] playing a CREATOR PREVIEW draft, not published content.');
+    cached = preview;
+    return cached;
+  }
+
+  // 2. Fetched at runtime rather than imported at build time, so a missing or
   // half-written content file degrades to the placeholder instead of breaking
   // the build. `scripts/sync-content.mjs` copies it into public/ on dev/build.
   try {
