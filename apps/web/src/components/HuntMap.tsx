@@ -63,8 +63,24 @@ const OSM_STYLE: maplibregl.StyleSpecification = {
      * clients that try. A paid provider (MAPTILER_KEY) is the supported route
      * if offline tiles are ever needed.
      */
-    { id: 'backdrop', type: 'background', paint: { 'background-color': '#243049' } },
-    { id: 'osm', type: 'raster', source: 'osm' },
+    { id: 'backdrop', type: 'background', paint: { 'background-color': '#1a1147' } },
+    {
+      id: 'osm',
+      type: 'raster',
+      source: 'osm',
+      // Desaturated and dimmed so the indigo canvas reads through and our
+      // saturated route strokes stay the brightest thing on screen.
+      paint: { 'raster-saturation': -0.75, 'raster-brightness-max': 0.55, 'raster-opacity': 0.72 },
+    },
+    /**
+     * Indigo wash ABOVE the tiles, below the routes.
+     *
+     * Without it the map reads as a grey rectangle dropped into the design.
+     * Kept light on purpose: this is a navigation aid a player squints at on a
+     * street corner, so street names must stay readable. Routes are drawn
+     * after this and remain the brightest thing on screen.
+     */
+    { id: 'tint', type: 'background', paint: { 'background-color': '#1a1147', 'background-opacity': 0.42 } },
   ],
 };
 
@@ -120,7 +136,7 @@ export default function HuntMap(props: HuntMapProps) {
         id: 'accuracy-fill',
         type: 'fill',
         source: 'accuracy',
-        paint: { 'fill-color': '#5eead4', 'fill-opacity': 0.12 },
+        paint: { 'fill-color': '#27e1ff', 'fill-opacity': 0.14 },
       });
 
       map.addSource('target', { type: 'geojson', data: emptyFC });
@@ -128,13 +144,15 @@ export default function HuntMap(props: HuntMapProps) {
         id: 'target-fill',
         type: 'fill',
         source: 'target',
-        paint: { 'fill-color': '#a78bfa', 'fill-opacity': 0.18 },
+        paint: { 'fill-color': '#ffd23d', 'fill-opacity': 0.13 },
       });
       map.addLayer({
         id: 'target-line',
         type: 'line',
         source: 'target',
-        paint: { 'line-color': '#a78bfa', 'line-width': 2, 'line-dasharray': [2, 2] },
+        // The destination is a dashed RADIUS, never a pin — the player is
+        // looking for an area, and a pin implies a precision we don't have.
+        paint: { 'line-color': '#ffd23d', 'line-width': 3, 'line-dasharray': [2, 2] },
       });
 
       map.addSource('trail', { type: 'geojson', data: emptyFC });
@@ -143,7 +161,7 @@ export default function HuntMap(props: HuntMapProps) {
         type: 'line',
         source: 'trail',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#5eead4', 'line-width': 4, 'line-opacity': 0.75 },
+        paint: { 'line-color': '#ff3d8b', 'line-width': 6, 'line-opacity': 0.95 },
       });
 
       map.addSource('completed', { type: 'geojson', data: emptyFC });
@@ -152,10 +170,10 @@ export default function HuntMap(props: HuntMapProps) {
         type: 'circle',
         source: 'completed',
         paint: {
-          'circle-radius': 7,
-          'circle-color': '#4ade80',
-          'circle-stroke-color': '#0b1020',
-          'circle-stroke-width': 2,
+          'circle-radius': 8,
+          'circle-color': '#b6ff3d',
+          'circle-stroke-color': '#1a1147',
+          'circle-stroke-width': 3,
         },
       });
 
@@ -165,10 +183,10 @@ export default function HuntMap(props: HuntMapProps) {
         type: 'circle',
         source: 'finish',
         paint: {
-          'circle-radius': 9,
-          'circle-color': '#fbbf24',
-          'circle-stroke-color': '#0b1020',
-          'circle-stroke-width': 2,
+          'circle-radius': 10,
+          'circle-color': '#ffd23d',
+          'circle-stroke-color': '#1a1147',
+          'circle-stroke-width': 3,
         },
       });
 
@@ -178,10 +196,10 @@ export default function HuntMap(props: HuntMapProps) {
         type: 'circle',
         source: 'player',
         paint: {
-          'circle-radius': 8,
-          'circle-color': '#eef2ff',
-          'circle-stroke-color': '#5eead4',
-          'circle-stroke-width': 3,
+          'circle-radius': 9,
+          'circle-color': '#ffffff',
+          'circle-stroke-color': '#ff3d8b',
+          'circle-stroke-width': 4,
         },
       });
 

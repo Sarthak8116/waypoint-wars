@@ -18,6 +18,7 @@ import maplibregl, { type Map as MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Feature, FeatureCollection, GeoJSON as GeoJSONObject } from 'geojson';
 import { lerpLatLng, type LatLng } from '@ww/shared';
+import { identityFor } from '@/lib/routeIdentity';
 
 export interface ReplayCheckpointEvent {
   position: LatLng;
@@ -79,8 +80,24 @@ const OSM_STYLE: maplibregl.StyleSpecification = {
      * clients that try. A paid provider (MAPTILER_KEY) is the supported route
      * if offline tiles are ever needed.
      */
-    { id: 'backdrop', type: 'background', paint: { 'background-color': '#243049' } },
-    { id: 'osm', type: 'raster', source: 'osm' },
+    { id: 'backdrop', type: 'background', paint: { 'background-color': '#1a1147' } },
+    {
+      id: 'osm',
+      type: 'raster',
+      source: 'osm',
+      // Schematic: desaturate hard so the three saturated trails are the
+      // brightest thing on the map and the convergence reads instantly.
+      paint: { 'raster-saturation': -0.8, 'raster-brightness-max': 0.5, 'raster-opacity': 0.65 },
+    },
+    /**
+     * Indigo wash ABOVE the tiles, below the routes.
+     *
+     * Without it the map reads as a grey rectangle dropped into the design.
+     * Kept light on purpose: this is a navigation aid a player squints at on a
+     * street corner, so street names must stay readable. Routes are drawn
+     * after this and remain the brightest thing on screen.
+     */
+    { id: 'tint', type: 'background', paint: { 'background-color': '#1a1147', 'background-opacity': 0.42 } },
   ],
 };
 
@@ -141,14 +158,21 @@ export default function RouteReplay({ players, durationMs, onDone }: RouteReplay
     mapRef.current = map;
 
     map.on('load', () => {
-      for (const p of players) {
+      players.forEach((p, i) => {
         map.addSource(`trail-${p.id}`, { type: 'geojson', data: empty });
         map.addLayer({
           id: `trail-${p.id}`,
           type: 'line',
           source: `trail-${p.id}`,
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': p.color, 'line-width': 4, 'line-opacity': 0.85 },
+          paint: {
+            'line-color': p.color,
+            'line-width': 6,
+            'line-opacity': 1,
+            // Pattern as well as colour, so the routes stay distinguishable
+            // in grayscale and for colour-blind viewers.
+            'line-dasharray': identityFor(i).dash,
+          },
         });
 
         map.addSource(`pins-${p.id}`, { type: 'geojson', data: empty });
@@ -157,10 +181,10 @@ export default function RouteReplay({ players, durationMs, onDone }: RouteReplay
           type: 'circle',
           source: `pins-${p.id}`,
           paint: {
-            'circle-radius': 6,
+            'circle-radius': 7,
             'circle-color': p.color,
-            'circle-stroke-color': '#0b1020',
-            'circle-stroke-width': 2,
+            'circle-stroke-color': '#1a1147',
+            'circle-stroke-width': 3,
           },
         });
 
@@ -170,13 +194,13 @@ export default function RouteReplay({ players, durationMs, onDone }: RouteReplay
           type: 'circle',
           source: `head-${p.id}`,
           paint: {
-            'circle-radius': 9,
+            'circle-radius': 10,
             'circle-color': p.color,
-            'circle-stroke-color': '#eef2ff',
-            'circle-stroke-width': 3,
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 4,
           },
         });
-      }
+      });
 
       // Frame every path so all three routes are visible from the first frame.
       const all = players.flatMap((p) => p.path);
@@ -313,34 +337,19 @@ export default function RouteReplay({ players, durationMs, onDone }: RouteReplay
     <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column' }}>
       <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
 
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 10,
-          background: 'var(--surface)',
-          borderTop: '1px solid var(--line)',
-          borderRadius: '18px 18px 0 0',
-          padding: 16,
-          paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
-          maxHeight: '58dvh',
-          overflowY: 'auto',
-        }}
-      >
+      <div className="sheet" style={{ maxHeight: '60dvh' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <button className="btn" style={{ minWidth: 52 }} onClick={() => setPlaying((v) => !v)}>
+          <button className="btn btn-ghost" style={{ minWidth: 56, padding: 0 }} onClick={() => setPlaying((v) => !v)}>
             {playing ? '❚❚' : '▶'}
           </button>
-          <button className="btn" style={{ minWidth: 52 }} onClick={restart}>
+          <button className="btn btn-ghost" style={{ minWidth: 56, padding: 0 }} onClick={restart}>
             ↺
           </button>
           {SPEEDS.map((s) => (
             <button
               key={s}
-              className={`btn${speed === s ? ' primary' : ''}`}
-              style={{ minWidth: 52, padding: '0 12px' }}
+              className={`btn${speed === s ? ' btn-yellow' : ' btn-ghost'}`}
+              style={{ minWidth: 56, padding: '0 12px' }}
               onClick={() => setSpeed(s)}
             >
               {s}×
@@ -350,49 +359,55 @@ export default function RouteReplay({ players, durationMs, onDone }: RouteReplay
 
         <div
           style={{
-            height: 6,
-            background: 'var(--surface-2)',
-            borderRadius: 999,
+            height: 7,
+            background: 'var(--panel-raised)',
+            borderRadius: 'var(--r-pill)',
             overflow: 'hidden',
-            marginBottom: 14,
+            marginBottom: 16,
           }}
         >
           <div
             style={{
               width: `${progressPct}%`,
               height: '100%',
-              background: 'linear-gradient(90deg, var(--accent), var(--accent-2))',
+              background: 'var(--yellow)',
             }}
           />
         </div>
 
-        {xpAt.map((p) => (
+        {xpAt.map((p, i) => (
           <div
             key={p.id}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              padding: '7px 0',
-              borderBottom: '1px solid var(--line)',
+              padding: '11px 0',
+              borderBottom: '2px solid var(--border)',
             }}
           >
             <span
+              className="pill"
               style={{
-                width: 12,
-                height: 12,
-                borderRadius: 3,
                 background: p.color,
+                color: '#1a1147',
+                borderColor: p.color,
+                padding: '4px 9px',
+                fontSize: 13,
                 flexShrink: 0,
               }}
-            />
+            >
+              {/* Glyph as well as colour — the route identity has to survive
+                  grayscale and colour-blindness. */}
+              {identityFor(i).glyph}
+            </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 700 }}>{p.name}</div>
               <div className="muted" style={{ fontSize: 12 }}>
                 {p.routeLabel}
               </div>
             </div>
-            <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{p.xp} XP</span>
+            <span className="mono" style={{ fontWeight: 700, color: 'var(--lime)', fontSize: 17 }}>{p.xp} XP</span>
           </div>
         ))}
 

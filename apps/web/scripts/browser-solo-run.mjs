@@ -148,8 +148,12 @@ async function main() {
       }
 
       if (step === 0) {
-        const reveal = await page.locator('text=/Sources:/i').count();
-        check('the historical reveal is shown after approval', reveal > 0);
+        // The reveal flips the whole surface to the light register: a
+        // full-bleed accent hero with the XP, then the history in ink.
+        const heroXp = await page.locator('text=/^\\+\\d+ XP$/').count();
+        const body = await page.locator('body').innerText();
+        const hasHistory = body.length > 400;
+        check('the historical reveal is shown after approval', heroXp > 0 && hasHistory);
         await page.screenshot({ path: resolve(SHOT_DIR, '6-solo-reveal.png') });
       }
 

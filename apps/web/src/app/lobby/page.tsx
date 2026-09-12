@@ -16,7 +16,7 @@ const HUNT_ID = 'hunt_three_rivers_run';
 
 export default function LobbyPage() {
   return (
-    <Suspense fallback={<main className="wrap"><p className="muted">Loading…</p></main>}>
+    <Suspense fallback={<main className="wrap stack"><p className="muted">Loading…</p></main>}>
       <Lobby />
     </Suspense>
   );
@@ -65,25 +65,21 @@ function Lobby() {
     void room.joinRoom(code.trim(), name.trim() || 'Player');
   }, [room, code, name]);
 
-  const input: React.CSSProperties = {
-    width: '100%',
-    minHeight: 48,
-    padding: '0 14px',
-    borderRadius: 12,
-    border: '1px solid var(--line)',
-    background: 'var(--surface-2)',
-    color: 'var(--text)',
-    fontSize: 16,
-    marginBottom: 10,
-  };
 
   // --- In a room, waiting for the host ------------------------------------
   if (view.code) {
     return (
-      <main className="wrap">
-        <h1 style={{ fontSize: 26, marginBottom: 4 }}>Room {view.code}</h1>
-        <p className="muted" style={{ marginTop: 0 }}>
-          {view.isHost ? 'Share this code or QR, then start.' : 'Waiting for the host to start…'}
+      <main className="wrap stack">
+        <p className="label" style={{ color: 'var(--cyan)', marginBottom: 10 }}>
+          {view.isHost ? 'Share this code' : 'Waiting for the host'}
+        </p>
+        <h1 className="display mono" style={{ fontSize: 56, letterSpacing: '0.06em' }}>
+          {view.code}
+        </h1>
+        <p className="muted" style={{ marginTop: 12 }}>
+          {view.isHost
+            ? 'Anyone can scan the code below — no app, no install.'
+            : 'You are in. The host starts when everyone has joined.'}
         </p>
 
         {qr && (
@@ -91,7 +87,14 @@ function Lobby() {
           <img
             src={qr}
             alt={`QR code to join room ${view.code}`}
-            style={{ width: 240, maxWidth: '100%', borderRadius: 14, display: 'block', margin: '16px 0' }}
+            style={{
+              width: 260,
+              maxWidth: '100%',
+              borderRadius: 'var(--r-card)',
+              display: 'block',
+              margin: '18px 0',
+              border: '3px solid var(--border)',
+            }}
           />
         )}
 
@@ -108,7 +111,7 @@ function Lobby() {
         </div>
 
         {view.isHost && (
-          <button className="btn primary" style={{ width: '100%' }} onClick={room.startHunt}>
+          <button className="btn btn-lime btn-block" onClick={room.startHunt}>
             Start hunt
           </button>
         )}
@@ -120,14 +123,16 @@ function Lobby() {
 
   // --- Create or join ------------------------------------------------------
   return (
-    <main className="wrap">
-      <h1 style={{ fontSize: 28, marginBottom: 4 }}>Multiplayer</h1>
+    <main className="wrap stack">
+      <p className="label" style={{ color: 'var(--pink)', marginBottom: 10 }}>Play together</p>
+      <h1 className="display" style={{ fontSize: 46 }}>Multiplayer</h1>
       <p className="muted" style={{ marginTop: 0 }}>
         Everyone walks a different route. Everyone finishes in the same place.
       </p>
 
       <input
-        style={input}
+        className="field"
+        style={{ marginBottom: 12 }}
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Your name"
@@ -142,7 +147,7 @@ function Lobby() {
           {(['individual-race', 'team-race'] as GameMode[]).map((m) => (
             <button
               key={m}
-              className={`btn${mode === m ? ' primary' : ''}`}
+              className={`btn${mode === m ? ' btn-yellow' : ' btn-ghost'}`}
               style={{ flex: 1, fontSize: 14 }}
               onClick={() => setMode(m)}
             >
@@ -151,8 +156,7 @@ function Lobby() {
           ))}
         </div>
         <button
-          className="btn primary"
-          style={{ width: '100%' }}
+          className="btn btn-pink btn-block"
           onClick={handleCreate}
           disabled={view.phase === 'connecting'}
         >
@@ -165,15 +169,21 @@ function Lobby() {
           JOIN WITH A CODE
         </p>
         <input
-          style={{ ...input, textTransform: 'uppercase', letterSpacing: '0.25em', fontWeight: 700 }}
+          className="field mono"
+          style={{
+            marginBottom: 12,
+            textTransform: 'uppercase',
+            letterSpacing: '0.3em',
+            fontSize: 22,
+            textAlign: 'center',
+          }}
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           placeholder="ABC234"
           maxLength={6}
         />
         <button
-          className="btn"
-          style={{ width: '100%' }}
+          className="btn btn-cyan btn-block"
           onClick={handleJoin}
           disabled={code.length !== 6 || view.phase === 'connecting'}
         >

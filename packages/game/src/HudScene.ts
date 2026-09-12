@@ -375,7 +375,7 @@ export class HudScene extends Phaser.Scene {
   private buildXpCounter(): void {
     this.xpText = this.add
       .text(0, 0, formatXp(0), {
-        fontFamily: FONT.family,
+        fontFamily: FONT.mono,
         fontSize: FONT.xp,
         color: COLORS.xpText,
         fontStyle: 'bold',
@@ -390,7 +390,10 @@ export class HudScene extends Phaser.Scene {
       .setOrigin(1, 0);
     this.timerText = this.add
       .text(0, 0, formatCountdown(0), {
-        fontFamily: FONT.family,
+        // Space Mono here specifically: a countdown that changes every second
+        // must not reflow, and tabular digits are the only reason mono is
+        // allowed anywhere in this design.
+        fontFamily: FONT.mono,
         fontSize: FONT.timer,
         color: COLORS.ink,
       })

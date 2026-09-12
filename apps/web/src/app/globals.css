@@ -1,85 +1,519 @@
+/**
+ * Waypoint Wars design system — bright arcade / indie-game.
+ *
+ * Flat colour blocks only. No glassmorphism, no soft glows, no gradients, no
+ * blurred shadows. Depth comes from two devices and only these two:
+ *   · a hard offset shadow (0 7px 0 <darker accent>, no blur, no x-offset)
+ *   · a 3px solid border
+ *
+ * REGISTER SWITCH — the single most important rule here. The interface is
+ * deep indigo while the player is WORKING (walking, answering, racing), and
+ * flips to a white surface with a full-bleed accent hero at the moment of
+ * REWARD. Rewards are the only light screens, so the payoff can never be
+ * mistaken for a notification.
+ */
+
+/* ---------------------------------------------------------------------- */
+/* Tokens                                                                  */
+/* ---------------------------------------------------------------------- */
+
 :root {
-  --bg: #0b1020;
-  --surface: #141b32;
-  --surface-2: #1d2743;
-  --line: #2a3557;
-  --text: #eef2ff;
-  --muted: #9aa6c9;
-  --accent: #5eead4;
-  --accent-2: #a78bfa;
-  --warn: #fbbf24;
-  --bad: #fb7185;
-  --good: #4ade80;
+  /* Dark register — the working surface */
+  --canvas: #1a1147;
+  --panel: #241a63;
+  --panel-raised: #2e2280;
+  --border: #3b2e9a;
+
+  --text: #ffffff;
+  --muted: #c7bef5;
+  --dim: #9c92dc;
+
+  /* Light register — reward only */
+  --light: #ffffff;
+  --ink: #171043;
+  --ink-body: #3a3366;
+  --tint: #f0edff;
+
+  /* Accents. Dark ink on accent everywhere EXCEPT pink, which takes white. */
+  --pink: #ff3d8b;
+  --pink-shadow: #c41e68;
+  --pink-ink: #ffffff;
+
+  --cyan: #27e1ff;
+  --cyan-shadow: #00a9c4;
+  --cyan-ink: #0b2b33;
+
+  --lime: #b6ff3d;
+  --lime-shadow: #85c516;
+  --lime-ink: #1b2e05;
+
+  --yellow: #ffd23d;
+  --yellow-shadow: #c9a200;
+  --yellow-ink: #3a2b00;
+
+  /* Route identities. Colour AND pattern, so the difference survives
+     colourblindness and grayscale. */
+  --route-1: var(--pink);
+  --route-2: var(--cyan);
+  --route-3: var(--lime);
+
+  /* Shape */
+  --r-btn: 15px;
+  --r-card: 20px;
+  --r-panel: 28px;
+  --r-pill: 999px;
+
+  --page-pad: 20px;
+  --gap: 20px;
 }
 
-* { box-sizing: border-box; }
+/* ---------------------------------------------------------------------- */
+/* Base                                                                    */
+/* ---------------------------------------------------------------------- */
 
-html, body {
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
+  background: var(--canvas);
   color: var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  /* Mobile-first: the game is played on a phone, one-handed, outdoors. */
+  font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 17px;
+  line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;
 }
 
-/* Fill the viewport correctly on mobile Safari, where 100vh overflows. */
-body { min-height: 100dvh; }
+body {
+  min-height: 100dvh;
+}
 
-a { color: var(--accent); }
+/* ---------------------------------------------------------------------- */
+/* Type scale                                                              */
+/* ---------------------------------------------------------------------- */
+
+.display {
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  font-size: clamp(34px, 11vw, 74px);
+  margin: 0;
+}
+
+h1,
+h2 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+h1 {
+  font-size: 38px;
+}
+h2 {
+  font-size: 28px;
+}
+h3 {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+p {
+  margin: 0 0 12px;
+}
+
+/** Uppercase micro-label. Used for section eyebrows and pill text. */
+.label {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1;
+}
+
+/** Space Mono, and ONLY for timers and room codes. */
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--muted);
+}
+.dim {
+  color: var(--dim);
+}
+
+a {
+  color: var(--cyan);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Layout                                                                  */
+/* ---------------------------------------------------------------------- */
 
 .wrap {
-  max-width: 720px;
+  max-width: 560px;
   margin: 0 auto;
-  padding-inline: 16px;
-  padding-block: 24px;
+  padding-inline: var(--page-pad);
+  padding-block: 28px calc(28px + env(safe-area-inset-bottom));
 }
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Cards — flat panel fill + 3px border. No shadow on dark surfaces.       */
+/* ---------------------------------------------------------------------- */
 
 .card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px;
+  background: var(--panel);
+  border: 3px solid var(--border);
+  border-radius: var(--r-card);
+  padding: 18px;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
+.card-raised {
+  background: var(--panel-raised);
+  border: 3px solid var(--border);
+  border-radius: var(--r-card);
+  padding: 18px;
 }
 
-.badge.live { color: var(--good); border-color: color-mix(in srgb, var(--good) 40%, transparent); }
-.badge.mock { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
-.badge.off  { color: var(--muted); }
+/** The big surfaces: bottom sheets, phone frames. */
+.panel {
+  background: var(--panel);
+  border: 3px solid var(--border);
+  border-radius: var(--r-panel);
+}
+
+/** Light card — reward register only. */
+.card-light {
+  background: var(--light);
+  color: var(--ink-body);
+  border: 3px solid var(--ink);
+  border-radius: var(--r-card);
+  padding: 18px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Buttons — hard offset shadow, no blur, no x-offset                      */
+/* ---------------------------------------------------------------------- */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 48px; /* thumb-sized: players tap this while walking */
-  padding: 0 20px;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: var(--surface-2);
+  gap: 9px;
+  min-height: 58px;
+  padding: 0 22px;
+  border-radius: var(--r-btn);
+  border: 3px solid var(--border);
+  background: var(--panel-raised);
   color: var(--text);
-  font-size: 16px;
-  font-weight: 600;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   cursor: pointer;
   text-decoration: none;
+  transition: transform 140ms ease-out, box-shadow 140ms ease-out;
 }
 
-.btn.primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #0b1020;
-  border-color: transparent;
+.btn:active:not(:disabled) {
+  transform: translateY(3px);
 }
 
-.muted { color: var(--muted); }
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/** One saturated primary per state. */
+.btn-pink,
+.btn-cyan,
+.btn-lime,
+.btn-yellow {
+  border: none;
+}
+
+.btn-pink {
+  background: var(--pink);
+  color: var(--pink-ink);
+  box-shadow: 0 7px 0 var(--pink-shadow);
+}
+.btn-cyan {
+  background: var(--cyan);
+  color: var(--cyan-ink);
+  box-shadow: 0 7px 0 var(--cyan-shadow);
+}
+.btn-lime {
+  background: var(--lime);
+  color: var(--lime-ink);
+  box-shadow: 0 7px 0 var(--lime-shadow);
+}
+.btn-yellow {
+  background: var(--yellow);
+  color: var(--yellow-ink);
+  box-shadow: 0 7px 0 var(--yellow-shadow);
+}
+
+.btn-pink:active:not(:disabled),
+.btn-cyan:active:not(:disabled),
+.btn-lime:active:not(:disabled),
+.btn-yellow:active:not(:disabled) {
+  box-shadow: 0 4px 0 var(--pink-shadow);
+}
+.btn-cyan:active:not(:disabled) {
+  box-shadow: 0 4px 0 var(--cyan-shadow);
+}
+.btn-lime:active:not(:disabled) {
+  box-shadow: 0 4px 0 var(--lime-shadow);
+}
+.btn-yellow:active:not(:disabled) {
+  box-shadow: 0 4px 0 var(--yellow-shadow);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/** Ghost — secondary, on dark. */
+.btn-ghost {
+  background: transparent;
+  border: 3px solid var(--border);
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Pills                                                                   */
+/* ---------------------------------------------------------------------- */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: var(--r-pill);
+  background: var(--panel-raised);
+  border: 2px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  /* Never let a pill collide or squeeze — see .hud below. */
+  white-space: nowrap;
+  flex: none;
+}
+
+.pill-pink {
+  background: var(--pink);
+  color: var(--pink-ink);
+  border-color: var(--pink-shadow);
+}
+.pill-cyan {
+  background: var(--cyan);
+  color: var(--cyan-ink);
+  border-color: var(--cyan-shadow);
+}
+.pill-lime {
+  background: var(--lime);
+  color: var(--lime-ink);
+  border-color: var(--lime-shadow);
+}
+.pill-yellow {
+  background: var(--yellow);
+  color: var(--yellow-ink);
+  border-color: var(--yellow-shadow);
+}
+
+/* ---------------------------------------------------------------------- */
+/* HUD — three columns, so nothing can ever collide                        */
+/* ---------------------------------------------------------------------- */
+
+/**
+ * `auto minmax(0, 1fr) auto` with nowrap/flex:none pills is what makes the
+ * top strip collision-proof: the left stat and right timer size to content,
+ * the centre status takes whatever is left and truncates rather than pushing.
+ */
+.hud {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px calc(10px + env(safe-area-inset-top));
+}
+
+.hud > .hud-center {
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Progress — 7px pill segments                                            */
+/* ---------------------------------------------------------------------- */
+
+.segs {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.seg {
+  height: 7px;
+  flex: 1 1 0;
+  min-width: 10px;
+  border-radius: var(--r-pill);
+  background: var(--panel-raised);
+}
+
+.seg-done {
+  background: var(--route-1);
+}
+.seg-now {
+  background: var(--yellow);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Inputs                                                                  */
+/* ---------------------------------------------------------------------- */
+
+.field {
+  width: 100%;
+  min-height: 58px;
+  padding: 0 16px;
+  border-radius: var(--r-btn);
+  border: 3px solid var(--border);
+  background: var(--panel-raised);
+  color: var(--text);
+  font-family: inherit;
+  font-weight: 600;
+  /* 16px minimum, or iOS Safari zooms the viewport on focus. */
+  font-size: 17px;
+}
+
+.field::placeholder {
+  color: var(--dim);
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--cyan);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Bottom sheet                                                            */
+/* ---------------------------------------------------------------------- */
+
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  background: var(--panel);
+  border-top: 3px solid var(--border);
+  border-radius: var(--r-panel) var(--r-panel) 0 0;
+  padding: 20px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  max-height: 76dvh;
+  overflow-y: auto;
+}
+
+/** Reward register: the sheet flips to white. */
+.sheet-light {
+  background: var(--light);
+  color: var(--ink-body);
+  border-top: 3px solid var(--ink);
+}
+
+/** Full-bleed accent hero, only at the moment of reward. */
+.hero {
+  margin: -20px -20px 18px;
+  padding: 22px 20px;
+  border-radius: var(--r-panel) var(--r-panel) 0 0;
+}
+
+.hero-lime {
+  background: var(--lime);
+  color: var(--lime-ink);
+}
+.hero-pink {
+  background: var(--pink);
+  color: var(--pink-ink);
+}
+.hero-cyan {
+  background: var(--cyan);
+  color: var(--cyan-ink);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Motion — under 400ms, ease-out, nothing bounces                         */
+/* ---------------------------------------------------------------------- */
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.float {
+  animation: float 5.5s ease-in-out infinite;
+}
+
+@keyframes ping {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.caret::after {
+  content: '▌';
+  animation: caret 1s steps(1) infinite;
+  margin-left: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

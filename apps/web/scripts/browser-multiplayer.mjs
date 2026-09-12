@@ -97,14 +97,15 @@ async function main() {
     await host.page.locator('input[placeholder="Your name"]').fill('Ada');
     await host.page.locator('button:has-text("Create room")').click();
 
+    // The room code IS the display heading — six mono characters, no prefix.
     const codeShown = await host.page
-      .waitForSelector('text=/Room [A-Z0-9]{6}/', { timeout: 20_000 })
+      .waitForSelector('h1.mono', { timeout: 20_000 })
       .then(() => true)
       .catch(() => false);
     check('host created a room', codeShown);
 
-    const heading = (await host.page.locator('h1').first().textContent()) ?? '';
-    const code = heading.match(/Room ([A-Z0-9]{6})/)?.[1] ?? '';
+    const heading = (await host.page.locator('h1.mono').first().textContent()) ?? '';
+    const code = heading.trim().match(/^[A-Z0-9]{6}$/)?.[0] ?? '';
     check('a six-character code is displayed', code.length === 6, code);
 
     const qr = await host.page.locator('img[alt*="QR"]').count();
@@ -118,7 +119,7 @@ async function main() {
     await guest.page.locator('button:has-text("Join room")').click();
 
     const joined = await guest.page
-      .waitForSelector(`text=/Room ${code}/`, { timeout: 20_000 })
+      .waitForSelector(`text=${code}`, { timeout: 20_000 })
       .then(() => true)
       .catch(() => false);
     check('guest joined with the code', joined);

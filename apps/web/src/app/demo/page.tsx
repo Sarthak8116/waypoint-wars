@@ -15,11 +15,10 @@ import dynamic from 'next/dynamic';
 import { loadHuntBundle, routeCheckpoints, type HuntBundle } from '@/lib/huntData';
 import { simulateRun } from '@/lib/simulateRun';
 import type { ReplayPlayer } from '@/components/RouteReplay';
+import { identityFor } from '@/lib/routeIdentity';
 
 const RouteReplay = dynamic(() => import('@/components/RouteReplay'), { ssr: false });
 
-/** Distinct hues that stay legible on the map and in both themes. */
-const PLAYER_COLORS = ['#5eead4', '#a78bfa', '#fbbf24'];
 
 const PERSONAS = [
   { name: 'Ava', pace: 0.86, hintAt: [], missAt: [2] },
@@ -52,7 +51,7 @@ export default function DemoPage() {
         id: route.id,
         name: persona.name,
         routeLabel: route.label,
-        color: PLAYER_COLORS[i] ?? '#5eead4',
+        color: identityFor(i).color,
         path: run.path,
         checkpoints: run.checkpoints,
         finalXp: run.totalXp,
@@ -83,50 +82,21 @@ export default function DemoPage() {
 
   return (
     <>
-      <div
-        style={{
-          position: 'fixed',
-          top: 10,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 40,
-          background: 'rgba(94,234,212,0.14)',
-          color: 'var(--accent)',
-          border: '1px solid var(--accent)',
-          borderRadius: 999,
-          padding: '5px 12px',
-          fontSize: 11,
-          fontWeight: 700,
-          // Was clipped off both edges at phone width: translateX(-50%) plus
-          // nowrap plus a label wider than the viewport.
-          maxWidth: 'calc(100vw - 24px)',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        ▶ Demo Mode — real scoring
+      <div className="hud" style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40 }}>
+        <span />
+        <span className="hud-center">
+          <span className="pill pill-cyan">▶ Demo Mode · real scoring</span>
+        </span>
+        <span />
       </div>
 
       {bundle.isFallback && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 46,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 40,
-            background: 'rgba(251,191,36,0.16)',
-            color: 'var(--warn)',
-            border: '1px solid var(--warn)',
-            borderRadius: 999,
-            padding: '5px 12px',
-            fontSize: 11,
-            fontWeight: 700,
-            maxWidth: 'calc(100vw - 24px)',
-          }}
-        >
-          ⚠ Placeholder content
+        <div className="hud" style={{ position: 'fixed', top: 44, left: 0, right: 0, zIndex: 40 }}>
+          <span />
+          <span className="hud-center">
+            <span className="pill pill-yellow">⚠ Placeholder content</span>
+          </span>
+          <span />
         </div>
       )}
 

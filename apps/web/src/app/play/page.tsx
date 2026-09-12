@@ -235,30 +235,14 @@ function SoloHunt({ bundle, routeId }: { bundle: HuntBundle; routeId: string }) 
 
 function Banner({ tone, children }: { tone: 'warn' | 'info'; children: React.ReactNode }) {
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 10,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 20,
-        background: tone === 'warn' ? 'rgba(251,191,36,0.16)' : 'rgba(94,234,212,0.14)',
-        color: tone === 'warn' ? 'var(--warn)' : 'var(--accent)',
-        border: `1px solid ${tone === 'warn' ? 'var(--warn)' : 'var(--accent)'}`,
-        borderRadius: 999,
-        padding: '5px 12px',
-        fontSize: 11,
-        fontWeight: 700,
-        // The Phaser HUD draws XP at top-left and the timer at top-right, so
-        // this has to fit BETWEEN them. nowrap + a long label overflowed into
-        // both on a 430px phone — only visible in a screenshot.
-        maxWidth: 'calc(100vw - 200px)',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {children}
+    <div className="hud" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20 }}>
+      {/* Three columns: the Phaser HUD owns left and right, this owns centre.
+          Grid + nowrap pills is what makes collision structurally impossible. */}
+      <span />
+      <span className="hud-center">
+        <span className={`pill ${tone === 'warn' ? 'pill-yellow' : 'pill-cyan'}`}>{children}</span>
+      </span>
+      <span />
     </div>
   );
 }
@@ -283,99 +267,119 @@ function SoloPanel(props: {
   const { hunt, location } = props;
   const { state, activeCheckpoint, lastOutcome, instruction, hintText, verifying } = hunt;
 
-  const sheet: React.CSSProperties = {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 30,
-    background: 'var(--surface)',
-    borderTop: '1px solid var(--line)',
-    borderRadius: '18px 18px 0 0',
-    padding: 16,
-    paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
-    maxHeight: '72dvh',
-    overflowY: 'auto',
-  };
-
-  // --- Pre-start -----------------------------------------------------------
+  // ---------------------------------------------------------------- pre-start
   if (state.phase === 'NOT_STARTED') {
     return (
-      <div style={sheet}>
-        <p className="muted" style={{ margin: '0 0 4px', fontSize: 12, letterSpacing: '0.08em' }}>
-          YOUR ROUTE
+      <div className="sheet">
+        <p className="label" style={{ color: 'var(--pink)', marginBottom: 8 }}>
+          Your route
         </p>
-        <h2 style={{ margin: '0 0 12px', fontSize: 24 }}>{props.route}</h2>
-        <p className="muted" style={{ marginTop: 0, fontSize: 15 }}>
-          {hunt.totalCheckpoints} stops, finishing where every route ends. You&apos;ll only see one
-          clue at a time.
+        <h2 style={{ marginBottom: 10 }}>{props.route}</h2>
+        <p className="muted" style={{ fontSize: 16 }}>
+          {hunt.totalCheckpoints} stops, finishing where every route ends. You only
+          ever see one clue at a time.
         </p>
-        <button className="btn primary" style={{ width: '100%' }} onClick={props.onStart}>
+
+        <button className="btn btn-pink btn-block" onClick={props.onStart}>
           Start hunt
         </button>
-        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-          <button className="btn" style={{ flex: 1 }} onClick={() => location.startGps()}>
-            Use real GPS
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => location.startGps()}>
+            Real GPS
           </button>
-          <button className="btn" style={{ flex: 1 }} onClick={() => location.enableDemoMode()}>
+          <button
+            className="btn btn-ghost"
+            style={{ flex: 1 }}
+            onClick={() => location.enableDemoMode()}
+          >
             Demo Mode
           </button>
         </div>
+
         {location.error && (
-          <p style={{ color: 'var(--bad)', fontSize: 13 }}>{location.error}</p>
+          <p style={{ color: 'var(--pink)', fontSize: 14, marginTop: 12, marginBottom: 0 }}>
+            {location.error}
+          </p>
         )}
       </div>
     );
   }
 
-  // --- Finished ------------------------------------------------------------
+  // ----------------------------------------------------------------- finished
+  // REWARD REGISTER: light surface, full-bleed accent hero.
   if (state.phase === 'FINISHED') {
     return (
-      <div style={sheet}>
-        <h2 style={{ margin: '0 0 6px', fontSize: 26 }}>Hunt complete</h2>
-        <p style={{ fontSize: 40, fontWeight: 800, margin: '0 0 12px', color: 'var(--accent)' }}>
-          {state.totalXp} XP
+      <div className="sheet sheet-light">
+        <div className="hero hero-lime">
+          <p className="label" style={{ marginBottom: 6 }}>
+            Hunt complete
+          </p>
+          <p className="display" style={{ fontSize: 52 }}>
+            {state.totalXp} XP
+          </p>
+        </div>
+        <p style={{ fontSize: 17, color: 'var(--ink-body)' }}>
+          {state.reveals.length} historical discoveries on the {props.route}. The other
+          routes uncovered entirely different ones.
         </p>
-        <p className="muted" style={{ fontSize: 15 }}>
-          {state.reveals.length} historical discoveries on the {props.route}. Other routes uncovered
-          entirely different ones.
-        </p>
-        <a className="btn primary" href="/" style={{ width: '100%' }}>
+        <a className="btn btn-cyan btn-block" href="/demo">
+          Watch the replay
+        </a>
+        <a
+          className="btn btn-block"
+          href="/"
+          style={{
+            marginTop: 10,
+            background: 'transparent',
+            border: '3px solid var(--ink)',
+            color: 'var(--ink)',
+          }}
+        >
           Back to start
         </a>
       </div>
     );
   }
 
-  // --- Reveal after approval ----------------------------------------------
+  // ------------------------------------------------------------------- reveal
+  // REWARD REGISTER. This is the moment the product is about, so it must not
+  // be mistakable for a notification — the whole surface changes.
   if (lastOutcome?.outcome === 'approved' && lastOutcome.reveal) {
     return (
-      <div style={sheet}>
-        <span className={`badge ${lastOutcome.degraded ? 'mock' : 'live'}`}>
-          +{lastOutcome.xpAwarded} XP · {lastOutcome.degraded ? 'photo NOT verified' : 'verified'}
-        </span>
-        {lastOutcome.degraded && (
-          <p style={{ color: 'var(--warn)', fontSize: 12, margin: '8px 0 0' }}>
-            ⚠ Photo verification was unavailable ({lastOutcome.degraded}); this was accepted on the
-            written answer alone.
+      <div className="sheet sheet-light">
+        <div className={lastOutcome.degraded ? 'hero hero-cyan' : 'hero hero-lime'}>
+          <p className="label" style={{ marginBottom: 6 }}>
+            {lastOutcome.degraded ? 'Answer accepted · photo not verified' : 'Verified'}
           </p>
-        )}
-        <h2 style={{ margin: '10px 0 8px', fontSize: 22 }}>{lastOutcome.reveal.name}</h2>
-        <p style={{ fontSize: 16, lineHeight: 1.6, marginTop: 0 }}>
+          <p className="display" style={{ fontSize: 44 }}>
+            +{lastOutcome.xpAwarded} XP
+          </p>
+        </div>
+
+        <h3 style={{ color: 'var(--ink)', marginBottom: 10 }}>{lastOutcome.reveal.name}</h3>
+        <p style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--ink-body)' }}>
           {lastOutcome.reveal.historicalReveal}
         </p>
+
         {lastOutcome.reveal.sources.length > 0 && (
-          <p className="muted" style={{ fontSize: 12 }}>
-            Sources:{' '}
+          <p className="label" style={{ color: 'var(--ink-body)', opacity: 0.7, letterSpacing: '0.06em' }}>
             {lastOutcome.reveal.sources.map((s, i) => (
               <span key={s.title}>
                 {i > 0 && ' · '}
-                {s.url ? <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a> : s.title}
+                {s.url ? (
+                  <a href={s.url} target="_blank" rel="noreferrer" style={{ color: 'var(--ink)' }}>
+                    {s.title}
+                  </a>
+                ) : (
+                  s.title
+                )}
               </span>
             ))}
           </p>
         )}
-        <button className="btn primary" style={{ width: '100%' }} onClick={props.onAdvance}>
+
+        <button className="btn btn-pink btn-block" style={{ marginTop: 8 }} onClick={props.onAdvance}>
           Next clue →
         </button>
       </div>
@@ -384,70 +388,66 @@ function SoloPanel(props: {
 
   if (!activeCheckpoint) return null;
 
-  // --- Arrived: the challenge ---------------------------------------------
+  // ---------------------------------------------------------------- arrived
   if (props.withinRadius) {
     return (
-      <div style={sheet}>
-        <span className="badge live">You&apos;re here</span>
-        <h3 style={{ margin: '10px 0 6px', fontSize: 18 }}>{activeCheckpoint.observationQuestion}</h3>
-        <p className="muted" style={{ marginTop: 0, fontSize: 14 }}>
+      <div className="sheet">
+        <span className="pill pill-lime">You&apos;re here</span>
+
+        <h3 style={{ margin: '12px 0 6px' }}>{activeCheckpoint.observationQuestion}</h3>
+        <p className="muted" style={{ fontSize: 15 }}>
           {activeCheckpoint.photoRequirement}
         </p>
 
         {instruction && (
           <div
             style={{
-              background: 'var(--surface-2)',
-              border: '1px solid var(--accent-2)',
-              borderRadius: 10,
-              padding: '10px 12px',
-              margin: '12px 0',
+              background: 'var(--yellow)',
+              color: 'var(--yellow-ink)',
+              borderRadius: 'var(--r-btn)',
+              padding: '13px 15px',
+              margin: '14px 0',
             }}
           >
-            <p className="muted" style={{ margin: 0, fontSize: 11, letterSpacing: '0.08em' }}>
-              REQUIRED IN THIS PHOTO
+            <p className="label" style={{ marginBottom: 5, opacity: 0.75 }}>
+              Required in this photo
             </p>
-            <p style={{ margin: '4px 0 0', fontWeight: 600 }}>{instruction}</p>
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 17 }}>{instruction}</p>
           </div>
         )}
 
         <PhotoCapture onCapture={props.setImage} disabled={verifying} />
 
         <input
+          className="field"
+          style={{ marginTop: 12 }}
           value={props.answer}
           onChange={(e) => props.setAnswer(e.target.value)}
           placeholder="Your answer"
-          style={{
-            width: '100%',
-            minHeight: 48,
-            marginTop: 10,
-            padding: '0 14px',
-            borderRadius: 12,
-            border: '1px solid var(--line)',
-            background: 'var(--surface-2)',
-            color: 'var(--text)',
-            fontSize: 16, // 16px stops iOS Safari zooming the viewport on focus
-          }}
         />
 
         {lastOutcome?.outcome === 'rejected' && (
-          <p style={{ color: 'var(--bad)', fontSize: 14 }}>{lastOutcome.message}</p>
+          <p style={{ color: 'var(--pink)', fontSize: 15, marginTop: 12, marginBottom: 0 }}>
+            {lastOutcome.message}
+          </p>
         )}
 
         {hintText && (
-          <p style={{ color: 'var(--warn)', fontSize: 14 }}>💡 {hintText}</p>
+          <p style={{ color: 'var(--yellow)', fontSize: 15, marginTop: 12, marginBottom: 0 }}>
+            💡 {hintText}
+          </p>
         )}
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
           <button
-            className="btn"
+            className="btn btn-ghost"
             onClick={hintText ? hunt.requestDeeperHint : hunt.requestHint}
             disabled={verifying || (hintText !== null && !activeCheckpoint.hints?.[1])}
           >
             Hint
           </button>
           <button
-            className="btn primary"
+            className="btn btn-lime"
             style={{ flex: 1 }}
             onClick={props.onSubmit}
             disabled={!props.image || !props.answer.trim() || verifying}
@@ -459,24 +459,33 @@ function SoloPanel(props: {
     );
   }
 
-  // --- Navigating ----------------------------------------------------------
+  // -------------------------------------------------------------- navigating
   return (
-    <div style={sheet}>
-      <p className="muted" style={{ margin: '0 0 6px', fontSize: 12, letterSpacing: '0.08em' }}>
-        CLUE {state.activeIndex + 1} OF {hunt.totalCheckpoints}
+    <div className="sheet">
+      <p className="label dim" style={{ marginBottom: 10 }}>
+        Clue {state.activeIndex + 1} of {hunt.totalCheckpoints}
       </p>
-      <p style={{ fontSize: 17, lineHeight: 1.55, margin: '0 0 12px' }}>{activeCheckpoint.clue}</p>
-      <p className="muted" style={{ fontSize: 14, marginTop: 0 }}>
+
+      {/* The clue is the best writing in the product. Give it room. */}
+      <p style={{ fontSize: 19, lineHeight: 1.5, fontWeight: 600, marginBottom: 14 }}>
+        {activeCheckpoint.clue}
+      </p>
+
+      <p className="muted mono" style={{ fontSize: 15 }}>
         {Number.isFinite(props.distance) ? `${Math.round(props.distance)} m away` : 'Locating…'}
       </p>
-      {hintText && <p style={{ color: 'var(--warn)', fontSize: 14 }}>💡 {hintText}</p>}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn" onClick={hintText ? hunt.requestDeeperHint : hunt.requestHint}>
-          Hint (−20 XP)
+
+      {hintText && (
+        <p style={{ color: 'var(--yellow)', fontSize: 15 }}>💡 {hintText}</p>
+      )}
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+        <button className="btn btn-ghost" onClick={hintText ? hunt.requestDeeperHint : hunt.requestHint}>
+          Hint −20
         </button>
         {location.source === 'demo' && (
           <button
-            className="btn"
+            className="btn btn-cyan"
             style={{ flex: 1 }}
             onClick={() => location.walkTo(activeCheckpoint)}
           >

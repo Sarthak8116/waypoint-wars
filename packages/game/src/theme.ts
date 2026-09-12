@@ -8,26 +8,32 @@
  */
 
 export const COLORS = {
-  xp: 0xffd15c,
-  xpText: '#ffd15c',
-  ink: '#f5f7fa',
-  inkDim: '#aab4c2',
-  plate: 0x0d1220,
-  plateEdge: 0x2a3350,
-  accent: 0x4cc2ff,
-  accentText: '#4cc2ff',
-  success: 0x53d98b,
-  successText: '#53d98b',
-  danger: 0xff6b6b,
-  dangerText: '#ff6b6b',
-  warning: 0xffa94d,
-  warningText: '#ffa94d',
-  pipDone: 0x53d98b,
-  pipTodo: 0x39435a,
+  /** Yellow is reserved for the CURRENT thing — timer, active pip. */
+  xp: 0xffd23d,
+  xpText: '#ffd23d',
+  ink: '#ffffff',
+  inkDim: '#c7bef5',
+  /** Flat indigo plates with a solid edge. No blur, no glow. */
+  plate: 0x241a63,
+  plateEdge: 0x3b2e9a,
+  accent: 0x27e1ff,
+  accentText: '#27e1ff',
+  success: 0xb6ff3d,
+  successText: '#b6ff3d',
+  danger: 0xff3d8b,
+  dangerText: '#ff3d8b',
+  warning: 0xffd23d,
+  warningText: '#ffd23d',
+  /** Progress segments: done in route pink, todo in raised panel. */
+  pipDone: 0xff3d8b,
+  pipTodo: 0x2e2280,
 } as const;
 
 export const FONT = {
-  family: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  /** Outfit is loaded by the host page; fall back cleanly if it has not. */
+  family: 'Outfit, ui-sans-serif, system-ui, sans-serif',
+  /** Space Mono, and only for the timer. */
+  mono: '"Space Mono", ui-monospace, monospace',
   xp: '30px',
   timer: '26px',
   label: '13px',
@@ -36,5 +42,6 @@ export const FONT = {
   stat: '22px',
 } as const;
 
-export const PLATE_ALPHA = 0.72;
+/** Flat blocks, so the plate is near-opaque rather than glassy. */
+export const PLATE_ALPHA = 0.9;
 export const PAD = 14;

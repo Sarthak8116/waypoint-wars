@@ -120,8 +120,8 @@ async function main() {
       const { page, context, errors } = await openPage(browser, '/');
       const title = await page.title();
       check('home renders', (await page.locator('h1').count()) > 0, title);
-      const badges = await page.locator('.badge').allTextContents();
-      check('integration badges rendered', badges.length > 0, badges.join(' · ').slice(0, 80));
+      const badges = await page.locator('.pill').allTextContents();
+      check('integration pills rendered', badges.length > 0, badges.join(' · ').slice(0, 80));
       check('no page errors', errors.length === 0, errors[0] ?? '');
       await shot(page, '1-home');
       await context.close();
