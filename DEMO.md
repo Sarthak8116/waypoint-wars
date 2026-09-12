@@ -134,10 +134,32 @@ Say this plainly. It reads as rigor; claiming fraud-proof reads as naivety.
 
 | Symptom | Do this |
 | --- | --- |
-| Map blank | OSM tiles need network. Fall back to `/demo`, it's the strongest piece anyway |
+| Map blank | OSM tiles need network — see "Warm the tile cache" below |
 | Verification hangs | Check `curl localhost:2567/health` — if `gemini` isn't `live`, the key didn't load |
 | Lobby won't join | The code resolves via `/api/rooms/:code`; the server must be running |
 | Anything else | `/demo` is a self-contained, pre-computed replay. It needs the web app only |
 
 **`/demo` is your safety net.** If everything else dies, it still tells the
 whole story in ninety seconds.
+
+## Warm the tile cache before you present
+
+The map streams tiles from OpenStreetMap's public servers. On throttled venue
+wifi or a captive portal the map area renders as a flat backdrop — the routes
+and markers still draw, but the street map behind them does not, and "three
+routes converging on Downtown" is most of the visual pitch.
+
+**Do this while you still have good wifi:**
+
+1. Open `/demo` and let the replay run once, start to finish.
+2. Open `/play` and walk one checkpoint.
+3. Do NOT hard-refresh after that.
+
+Those tiles are then in the browser's HTTP cache and will render even if the
+network degrades. It costs thirty seconds and removes the single biggest
+environmental risk.
+
+I deliberately did NOT bundle tiles with the app: OpenStreetMap's usage policy
+prohibits bulk downloading, and their servers return an "Access blocked" image
+to clients that try it. If you ever want genuinely offline maps, the supported
+route is a paid provider — set `MAPTILER_KEY` and swap the style URL.

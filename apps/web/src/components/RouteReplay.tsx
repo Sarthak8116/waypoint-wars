@@ -64,7 +64,24 @@ const OSM_STYLE: maplibregl.StyleSpecification = {
       maxzoom: 19,
     },
   },
-  layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+  layers: [
+    /**
+     * A painted background UNDER the tiles.
+     *
+     * If the tile server is unreachable — throttled venue wifi, a captive
+     * portal, no signal — the map area would otherwise be pure black, and the
+     * routes drawn on top of it read as floating lines in a void. A muted
+     * land colour keeps the trails, markers and the converging-routes story
+     * legible with no network at all.
+     *
+     * Caching OSM's tiles locally is NOT an option: their usage policy
+     * prohibits bulk downloading, and they serve an "Access blocked" image to
+     * clients that try. A paid provider (MAPTILER_KEY) is the supported route
+     * if offline tiles are ever needed.
+     */
+    { id: 'backdrop', type: 'background', paint: { 'background-color': '#243049' } },
+    { id: 'osm', type: 'raster', source: 'osm' },
+  ],
 };
 
 const empty: FeatureCollection = { type: 'FeatureCollection', features: [] };
