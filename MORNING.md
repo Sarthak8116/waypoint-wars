@@ -32,6 +32,23 @@ through `/play` before you present. My check used a blank test image — the
 pipeline is proven, the *landmark matching quality* on your specific
 checkpoints is not.
 
+### ⚠️ Look at it in a browser — nobody has
+
+This is the real gap. Every check I ran is an HTTP status code or a unit test.
+**No human or tool has visually confirmed the app renders.** I tried; the
+browser tooling needed you to pick among three connected Chrome instances and
+you were asleep, so I did not block on it.
+
+Specifically unverified:
+- the Phaser HUD actually appears over the map (it resolved to `undefined` at
+  runtime earlier tonight with 53 tests passing — fixed, but never *seen*)
+- MapLibre tiles render and the player marker moves
+- creator marker dragging and click-vs-marker-click separation
+- the localStorage preview round-trip: write in `/creator`, walk it in `/play`
+
+`pnpm demo:check` passes 19/19, and that is still not the same as looking.
+Budget ten minutes for this before anything else.
+
 ### ⚠️ Verify the history before you say it out loud
 
 The content is yours, but I have not fact-checked it. Your own seed file says
@@ -137,8 +154,13 @@ Full detail in `README.md`; architecture rationale in `ARCHITECTURE.md`.
 
 ## 6. Suggested first 30 minutes
 
-1. Paste the Gemini key, restart, confirm `"gemini":"live"`.
-2. Run `/play` start to finish and submit one real photo. Watch it verify.
-3. Run `/demo` and time it. That is your three minutes.
-4. Two windows on `/lobby`, run a full race.
-5. Skim the historical claims for anything you would not defend on stage.
+1. `pnpm dev`, then `pnpm demo:check` — expect 19/19.
+2. **Open every route in a browser and look at it.** `/demo`, `/play`,
+   `/lobby`, `/creator`. Confirm the HUD renders over the map.
+3. Run `/play` start to finish and submit one real photo of an actual landmark.
+4. Run `/demo` and time it. That is your three minutes — script in `DEMO.md`.
+5. Two windows on `/lobby`, run a full race.
+6. Skim the historical claims for anything you would not defend on stage.
+
+`DEMO.md` has the presentation script, the questions you will get with honest
+answers, and a what-to-do-if-it-breaks table.
