@@ -188,6 +188,7 @@ pnpm --filter @ww/multiplayer-server e2e        # room forms, one submission
 pnpm --filter @ww/multiplayer-server e2e:full   # a COMPLETE race, both players
 pnpm --filter @ww/multiplayer-server e2e:team   # team mode: shared route + score
 pnpm --filter @ww/multiplayer-server e2e:reconnect  # phone locks mid-hunt
+pnpm --filter @ww/multiplayer-server e2e:hints      # hints actually cost XP
 ```
 
 `e2e:full` is the one that proves the pitch: two players walk different routes
