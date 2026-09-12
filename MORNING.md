@@ -138,9 +138,23 @@ provided is entirely black, making it impossible to see the landmark or any
 red object. The text answer matches the accepted list."* Specific, honest, and
 it tells the player their answer was right.
 
-### ⚠️ Verify the history before you say it out loud
+### ⚠️ Verify the history — I checked the riskiest seven, see HISTORY-CHECK.md
 
-The content is yours, but I have not fact-checked it. Your own seed file says
+I said this was yours alone. That was half-right: I could check the **factual
+claims** against public sources, and I did. **All seven I checked are correct**,
+including the one I most expected to be wrong (PPG Place: four black spheres).
+See `HISTORY-CHECK.md` for the table and sources.
+
+One hedge: the Smithfield reveal says Lindenthal was **"just 32"**. He was born
+in 1850 and the bridge opened in March 1883, so that is 32 or 33 depending on
+his birthday. If pressed, say "in his early thirties".
+
+What I still cannot check is whether each observable is **physically still
+there and photographable from a public sidewalk** — that needs someone standing
+Downtown. The Byham marquee and the Kaufmann's clock are the likeliest to have
+changed.
+
+The content is yours, and the remainder is unchecked. Your own seed file says
 every coordinate is a desk estimate needing an on-site GPS fix, and warns to
 confirm each observable is still present and photographable from a public
 sidewalk.
