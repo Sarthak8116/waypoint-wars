@@ -32,6 +32,30 @@ through `/play` before you present. My check used a blank test image — the
 pipeline is proven, the *landmark matching quality* on your specific
 checkpoints is not.
 
+### ⚠️ Gemini rate limits are a live demo risk
+
+I exhausted the free-tier quota benchmarking, and the provider correctly
+reported *"Verification is rate limited right now."* Two things follow:
+
+1. **A rate-limited verdict REJECTS the submission.** If you hit the limit on
+   stage, the photo fails and it looks like the feature is broken. Don't do
+   rapid repeated submissions while rehearsing — and if verification starts
+   failing, run `check:gemini` (exit code 2 means rate limited, not broken).
+2. **Latency is erratic.** `gemini-3.6-flash` is a thinking model; the identical
+   call measured 1.5s, 17.5s, 25s and 37.9s within minutes. I set
+   `thinkingLevel: minimal` (measured ~4.6s) and raised the timeout from 20s to
+   45s, because the old timeout was losing that race and degrading to "could not
+   reach Gemini" — which reads as a dead model rather than a slow one.
+
+If 4.6s feels too slow on stage, switch models with no code change:
+
+```bash
+GEMINI_MODEL_ID=gemini-flash-lite-latest   # measured 0.9s, 5x faster
+```
+
+Add it to `.env.local` and restart. Trade-off: lite is likely weaker at
+landmark matching, so test it on a real photo before committing.
+
 ### ⚠️ Look at it in a browser — nobody has
 
 This is the real gap. Every check I ran is an HTTP status code or a unit test.

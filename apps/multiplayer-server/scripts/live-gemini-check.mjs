@@ -58,10 +58,14 @@ try {
     // call was 404ing on a retired model: the provider degrades to a
     // confidence-0 "could not reach Gemini" verdict, which satisfies every
     // shape assertion above. Assert the model actually judged the image.
+    // Distinguish the three failure shapes, because they mean different things:
+    //   rate limited -> the code is fine, the quota is spent (transient)
+    //   unreachable  -> the model id or the network is wrong (broken)
+    //   a judgement  -> working
     [
-      'reason is a real judgement, NOT the unreachable fallback',
+      'reason is a real judgement, not an error fallback',
       typeof result.reason === 'string' &&
-        !/could not reach|nothing was judged|unavailable|timed out/i.test(result.reason),
+        !/could not reach|nothing was judged|unavailable|timed out|rate limited/i.test(result.reason),
     ],
   ];
 

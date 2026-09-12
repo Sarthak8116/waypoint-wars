@@ -31,7 +31,15 @@ import {
  * blip rather than a dead model. Check this endpoint still resolves before
  * demoing; `gemini-flash-latest` also works if a specific version is pulled.
  */
-export const GEMINI_MODEL_ID = 'gemini-3.6-flash';
+export const GEMINI_MODEL_ID = process.env.GEMINI_MODEL_ID ?? 'gemini-3.6-flash';
+
+/**
+ * Measured latency, vision + structured output, 3 calls each:
+ *   gemini-3.6-flash         4.6s  (default — better landmark matching)
+ *   gemini-flash-lite-latest 0.9s  (5x faster; try it if latency hurts)
+ * `gemini-flash-latest` rejects thinkingLevel entirely. Override with the
+ * GEMINI_MODEL_ID env var; no code change needed.
+ */
 
 /**
  * 20s. Long enough for a large phone photo on venue wifi, short enough that a
@@ -39,7 +47,17 @@ export const GEMINI_MODEL_ID = 'gemini-3.6-flash';
  * we return "could not verify" and invite a retry, which is strictly better
  * than a spinner that never resolves.
  */
-export const GEMINI_TIMEOUT_MS = 20_000;
+/**
+ * Measured, not guessed. `gemini-3.6-flash` is a THINKING model, and even with
+ * thinking minimised its latency is erratic — the same call was observed at
+ * 1.5s, 17.5s, 25s and 37.9s within a few minutes. A 20s timeout lost that
+ * race and the provider degraded to "could not reach Gemini", which reads like
+ * a dead model rather than a slow one.
+ *
+ * 45s is generous for a player standing on a street corner, but a slow pass
+ * beats a spurious rejection. The UI shows a verifying state throughout.
+ */
+export const GEMINI_TIMEOUT_MS = 45_000;
 
 /**
  * Temperature 0: this is a judgement, not prose. We want the same photo to get
@@ -322,6 +340,15 @@ export class GeminiVerificationProvider implements VerificationProvider {
             responseSchema: RESPONSE_SCHEMA,
             abortSignal: controller.signal,
             httpOptions: { timeout: this.timeoutMs },
+            /**
+             * Minimise thinking. This is a bounded visual classification —
+             * "is this that building, are three fingers visible" — and extended
+             * reasoning adds latency without accuracy. Measured: ~4.6s with
+             * minimal thinking against wildly variable latency without it.
+             * Note `thinkingBudget: 0` is REJECTED by this model (400 invalid
+             * argument); `thinkingLevel` is the supported control.
+             */
+            thinkingConfig: { thinkingLevel: 'minimal' },
           },
         }),
         this.timeoutMs,

@@ -33,6 +33,8 @@ import { WebSocketTransport } from '@colyseus/ws-transport';
 
 import { huntStore } from './hunt-store.js';
 import { createRepository, validateHuntBundle, type HuntRepository } from './persistence/index.js';
+import { verifySubmission } from '@ww/verification';
+import { getVerificationProvider } from './verification-provider.js';
 import { ensureSeeded } from './seed.js';
 import { HuntRoom } from './rooms/HuntRoom.js';
 import { isValidRoomCode, roomCodes } from './rooms/room-codes.js';
@@ -126,6 +128,81 @@ app.get('/api/rooms/:code', (req, res) => {
     return;
   }
   res.json({ code, roomId });
+});
+
+// ---------------------------------------------------------------------------
+// Solo verification
+// ---------------------------------------------------------------------------
+
+/**
+ * Verify a SOLO submission. The multiplayer path does not use this — the room
+ * owns that, because only the room knows whose turn it is and what their active
+ * checkpoint is (D15).
+ *
+ * This endpoint exists so the Gemini key never reaches the browser. Without it
+ * the solo page degrades to answer-only checking, which looks like it works and
+ * silently never calls the model.
+ *
+ * SECURITY NOTE, stated plainly: solo mode is inherently client-trusting. There
+ * is no server-side run state, so a solo player could submit checkpoints out of
+ * order or replay one. What IS enforced here:
+ *   - the checkpoint is looked up from the SERVER's content, never taken from
+ *     the request body, so accepted answers and the reveal cannot be supplied
+ *     by the client
+ *   - the geofence is checked server-side against those real coordinates
+ *   - XP comes from the hunt engine, not from anything the client sent
+ * Solo XP is a personal record, not a competitive ranking, so that trade is
+ * acceptable. Multiplayer XP is fully authoritative.
+ */
+app.post('/api/verify', (req, res) => {
+  void (async () => {
+    const body = req.body as Partial<{
+      checkpointId: string;
+      image: string;
+      latitude: number;
+      longitude: number;
+      observationAnswer: string;
+      randomizedInstruction: string;
+      submittedAt: number;
+    }>;
+
+    if (
+      typeof body?.checkpointId !== 'string' ||
+      typeof body.image !== 'string' ||
+      typeof body.latitude !== 'number' ||
+      typeof body.longitude !== 'number'
+    ) {
+      res.status(400).json({ error: 'checkpointId, image, latitude and longitude are required.' });
+      return;
+    }
+
+    ensureSeeded();
+    const checkpoint = huntStore.getCheckpoint(body.checkpointId);
+    if (!checkpoint) {
+      res.status(404).json({ error: `Unknown checkpoint "${body.checkpointId}".` });
+      return;
+    }
+
+    try {
+      const verdict = await verifySubmission(
+        {
+          checkpointId: body.checkpointId,
+          image: body.image,
+          latitude: body.latitude,
+          longitude: body.longitude,
+          observationAnswer: body.observationAnswer ?? '',
+          randomizedInstruction: body.randomizedInstruction ?? '',
+          submittedAt: body.submittedAt ?? Date.now(),
+        },
+        checkpoint,
+        getVerificationProvider(),
+      );
+      res.json(verdict);
+    } catch (err) {
+      console.error('[api] solo verification failed', err);
+      res.status(502).json({ error: 'Verification service is unavailable.' });
+    }
+  })();
 });
 
 // ---------------------------------------------------------------------------
