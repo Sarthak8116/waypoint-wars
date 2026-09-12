@@ -29,6 +29,15 @@ export default function RacePage() {
   const room = useRoom();
   const { view } = room;
 
+  /**
+   * `useRoom()` returns a fresh object literal on every render, so depending on
+   * `room` in an effect re-runs that effect constantly. The arrival effect's
+   * cleanup then cancelled its own pending instruction request every time, and
+   * `request_instruction` never once reached the server. The individual
+   * callbacks are useCallback'd and stable — depend on those.
+   */
+  const { requestInstruction, updateLocation, requestHint, submitCheckpoint } = room;
+
   const target: LatLng | null = view.checkpoint
     ? { latitude: view.checkpoint.latitude, longitude: view.checkpoint.longitude }
     : null;
@@ -59,7 +68,7 @@ export default function RacePage() {
         bridge: bridgeRef.current,
         totalCheckpoints: view.totalCheckpoints || 5,
         selfPlayerId: view.selfId ?? undefined,
-        onHintRequested: () => view.checkpoint && room.requestHint(view.checkpoint.id),
+        onHintRequested: () => view.checkpoint && requestHint(view.checkpoint.id),
       });
     });
     return () => {
@@ -95,10 +104,10 @@ export default function RacePage() {
     if (view.phase !== 'running') return;
     const id = setInterval(() => {
       const p = location.position;
-      if (p) room.updateLocation(p.latitude, p.longitude, location.accuracyMeters);
+      if (p) updateLocation(p.latitude, p.longitude, location.accuracyMeters);
     }, LOCATION_PUSH_MS);
     return () => clearInterval(id);
-  }, [view.phase, location.position, location.accuracyMeters, room]);
+  }, [view.phase, location.position, location.accuracyMeters, updateLocation]);
 
   useEffect(() => {
     if (view.phase !== 'running') return;
@@ -114,19 +123,65 @@ export default function RacePage() {
     location.position && target ? haversineMeters(location.position, target) : Infinity;
   const withinRadius = view.checkpoint ? distance <= view.checkpoint.radiusMeters : false;
 
+  /**
+   * Latest values, read by the arrival effect WITHOUT being dependencies.
+   *
+   * This matters: `location.position` changes every animation frame while
+   * walking. Depending on it re-ran the arrival effect constantly, and each
+   * re-run's cleanup cancelled the pending instruction request before it could
+   * fire — so the instruction never arrived and `arrivedRef` had already been
+   * set, so nothing retried.
+   */
+  const latest = useRef({ position: location.position, accuracy: location.accuracyMeters, instruction: view.instruction });
+  latest.current = {
+    position: location.position,
+    accuracy: location.accuracyMeters,
+    instruction: view.instruction,
+  };
+
   useEffect(() => {
-    // Ask the server for the randomized instruction exactly once per arrival.
-    if (withinRadius && view.checkpoint && !arrivedRef.current) {
-      arrivedRef.current = true;
-      room.requestInstruction(view.checkpoint.id);
-      bridgeRef.current?.emit({
-        type: 'PLAYER_ARRIVED',
-        checkpointId: view.checkpoint.id,
-        index: view.checkpointIndex,
-      });
+    if (!withinRadius) {
+      arrivedRef.current = false;
+      return;
     }
-    if (!withinRadius) arrivedRef.current = false;
-  }, [withinRadius, view.checkpoint, view.checkpointIndex, room]);
+    if (!view.checkpoint || arrivedRef.current) return;
+
+    arrivedRef.current = true;
+    const checkpointId = view.checkpoint.id;
+
+    bridgeRef.current?.emit({
+      type: 'PLAYER_ARRIVED',
+      checkpointId,
+      index: view.checkpointIndex,
+    });
+
+    /**
+     * The server issues the instruction only once a LOCATION UPDATE has landed
+     * inside the radius — that geofence check is the anti-cheat premise. But
+     * locations are pushed on a 5s tick, so asking the instant the client
+     * notices arrival races the server. Push a fix immediately, then ask, and
+     * ask again if no answer came back.
+     */
+    const pos = latest.current.position;
+    if (pos) updateLocation(pos.latitude, pos.longitude, latest.current.accuracy);
+
+    const timers = [
+      setTimeout(() => requestInstruction(checkpointId), 500),
+      setTimeout(() => {
+        if (!latest.current.instruction) requestInstruction(checkpointId);
+      }, 2200),
+      setTimeout(() => {
+        if (!latest.current.instruction) {
+          const p = latest.current.position;
+          if (p) updateLocation(p.latitude, p.longitude, latest.current.accuracy);
+          requestInstruction(checkpointId);
+        }
+      }, 4500),
+    ];
+
+    return () => timers.forEach(clearTimeout);
+    // Only arrival identity belongs here. See `latest` above.
+  }, [withinRadius, view.checkpoint, view.checkpointIndex, requestInstruction, updateLocation]);
 
   // Reset per-checkpoint UI when the server unlocks the next one.
   useEffect(() => {
@@ -139,7 +194,7 @@ export default function RacePage() {
   const handleSubmit = useCallback(() => {
     if (!image || !view.checkpoint || !location.position) return;
     setSubmitting(true);
-    room.submitCheckpoint({
+    submitCheckpoint({
       checkpointId: view.checkpoint.id,
       image,
       latitude: location.position.latitude,
@@ -148,7 +203,7 @@ export default function RacePage() {
       randomizedInstruction: view.instruction ?? '',
       submittedAt: Date.now(),
     });
-  }, [image, answer, view.checkpoint, view.instruction, location.position, room]);
+  }, [image, answer, view.checkpoint, view.instruction, location.position, submitCheckpoint]);
 
   useEffect(() => {
     if (view.lastMessage) setSubmitting(false);
@@ -335,7 +390,7 @@ export default function RacePage() {
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
               <button
                 className="btn"
-                onClick={() => view.checkpoint && room.requestHint(view.checkpoint.id)}
+                onClick={() => view.checkpoint && requestHint(view.checkpoint.id)}
                 disabled={submitting}
               >
                 Hint
@@ -365,7 +420,7 @@ export default function RacePage() {
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 className="btn"
-                onClick={() => view.checkpoint && room.requestHint(view.checkpoint.id)}
+                onClick={() => view.checkpoint && requestHint(view.checkpoint.id)}
               >
                 Hint (−20 XP)
               </button>

@@ -10,7 +10,8 @@
     "lint": "next lint --max-warnings 0 || true",
     "test": "vitest run --passWithNoTests",
     "check:browser": "node scripts/browser-check.mjs",
-    "check:solo": "node scripts/browser-solo-run.mjs"
+    "check:solo": "node scripts/browser-solo-run.mjs",
+    "check:multiplayer": "node scripts/browser-multiplayer.mjs"
   },
   "dependencies": {
     "@ww/game": "workspace:*",

@@ -108,6 +108,10 @@ the UI kept showing reveals and "Next clue", because the panel keys off
 demoed a hunt that looked perfect and never moved. Fixed and verified: five
 distinct checkpoints, instruction on every arrival, 1250 XP at the finish.
 
+`pnpm check:multiplayer` drives TWO browsers through the real UI — create a
+room, join by code, both navigate to /race, different clues, arrive, get the
+server-issued instruction. It found the lobby bug below.
+
 Still unverified: creator marker dragging, and the localStorage preview
 round-trip (write in /creator, walk it in /play).
 

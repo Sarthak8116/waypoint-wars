@@ -173,11 +173,56 @@ export function useHuntRoom() {
       setView((v) => ({
         ...v,
         phase: 'lobby',
-        code: (room.state as { code?: string })?.code ?? null,
+        // Deliberately NOT read here. Colyseus delivers the first state patch
+        // asynchronously, so `room.state.code` is empty at this instant —
+        // reading it now pinned `code` to null forever and the lobby never
+        // left the create/join screen. `onStateChange` below fills it in.
+        code: null,
         selfId: room.sessionId,
         isHost,
         error: null,
       }));
+
+      /**
+       * Mirror the replicated fields the lobby and race screens need.
+       *
+       * This is the ONLY place shared state is read. Everything private —
+       * clues, hints, instructions, verdicts, reveals — arrives by targeted
+       * message and is handled above, never from here.
+       */
+      room.onStateChange((state) => {
+        const s = state as unknown as {
+          code?: string;
+          players?: Map<string, { sessionId: string; name: string; xp: number; checkpointIndex: number; totalCheckpoints: number; connected: boolean; hintsUsed: number }>;
+        };
+
+        setView((v) => {
+          const opponents: OpponentView[] = [];
+          let xp = v.xp;
+          let totalCheckpoints = v.totalCheckpoints;
+
+          s.players?.forEach((p) => {
+            if (p.sessionId === room.sessionId) {
+              xp = p.xp ?? xp;
+              totalCheckpoints = p.totalCheckpoints || totalCheckpoints;
+              return;
+            }
+            const existing = v.opponents.find((o) => o.playerId === p.sessionId);
+            opponents.push({
+              playerId: p.sessionId,
+              name: p.name,
+              checkpointIndex: p.checkpointIndex ?? 0,
+              totalCheckpoints: p.totalCheckpoints ?? 0,
+              xp: p.xp ?? 0,
+              region: existing?.region ?? null,
+              connected: p.connected ?? true,
+              hintsUsed: p.hintsUsed ?? 0,
+            });
+          });
+
+          return { ...v, code: s.code ?? v.code, xp, totalCheckpoints, opponents };
+        });
+      });
 
       // Colyseus delivers typed messages by name; the payload is our union.
       room.onMessage('*', (type, payload) => {
