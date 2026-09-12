@@ -75,7 +75,13 @@ export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
     const now = Date.now();
     arrivedAt.current = now;
 
+    // ARRIVE is legal from NAVIGATING *and* NEXT_CHECKPOINT, then the
+    // challenge has to be opened explicitly — SUBMIT is only legal from
+    // CHALLENGE_OPEN. Missing that second step left the machine parked in
+    // ARRIVED on checkpoint 1 while the UI happily showed reveals, because
+    // the panel keys off `withinRadius` and `lastOutcome` rather than phase.
     dispatch({ type: 'ARRIVE', checkpointIndex: state.activeIndex, now });
+    dispatch({ type: 'OPEN_CHALLENGE', checkpointIndex: state.activeIndex, now });
     setInstruction(
       generateInstruction({
         checkpointId: activeCheckpoint.id,
@@ -114,6 +120,11 @@ export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
       if (!cp || !activeProgress) return;
 
       const now = Date.now();
+      // Idempotent safety net: if arrival did not open the challenge (a retry,
+      // a remount), opening it again from CHALLENGE_OPEN is simply rejected
+      // and harmless. Without it SUBMIT is rejected and the run silently
+      // stops advancing while still looking correct.
+      dispatch({ type: 'OPEN_CHALLENGE', checkpointIndex: state.activeIndex, now });
       dispatch({ type: 'SUBMIT', checkpointIndex: state.activeIndex, now });
       setVerifying(true);
 
@@ -231,7 +242,12 @@ export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
     setLastOutcome(null);
     setInstruction(null);
     setHintText(null);
-    dispatch({ type: 'ADVANCE', now: Date.now() });
+    const now = Date.now();
+    dispatch({ type: 'ADVANCE', now });
+    // ADVANCE lands in NEXT_CHECKPOINT; the page's arrival detector watches
+    // for NAVIGATING. Rejected harmlessly on the final checkpoint, where
+    // ADVANCE goes straight to FINISHED.
+    dispatch({ type: 'BEGIN_NAVIGATION', now });
   }, []);
 
   return {

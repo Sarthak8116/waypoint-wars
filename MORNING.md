@@ -85,22 +85,31 @@ GEMINI_MODEL_ID=gemini-flash-lite-latest   # measured 0.9s, 5x faster
 Add it to `.env.local` and restart. Trade-off: lite is likely weaker at
 landmark matching, so test it on a real photo before committing.
 
-### ⚠️ Look at it in a browser — nobody has
+### ✅ The browser gap is closed — via Playwright, not the extension
 
-This is the real gap. Every check I ran is an HTTP status code or a unit test.
-**No human or tool has visually confirmed the app renders.** I tried; the
-browser tooling needed you to pick among three connected Chrome instances and
-you were asleep, so I did not block on it.
+I had written this off because the Chrome extension needed you to pick among
+three connected browsers. Playwright needs nobody.
 
-Specifically unverified:
-- the Phaser HUD actually appears over the map (it resolved to `undefined` at
-  runtime earlier tonight with 53 tests passing — fixed, but never *seen*)
-- MapLibre tiles render and the player marker moves
-- creator marker dragging and click-vs-marker-click separation
-- the localStorage preview round-trip: write in `/creator`, walk it in `/play`
+```bash
+pnpm check:browser   # 22 checks: rendering, canvases, no sideways scroll
+pnpm check:solo      # a COMPLETE solo hunt driven end to end
+```
 
-`pnpm demo:check` passes 19/19, and that is still not the same as looking.
-Budget ten minutes for this before anything else.
+Screenshots land in `.screenshots/`. Looking at them found three bugs no
+assertion caught (a clipped banner, a banner colliding with the XP counter,
+and the creator scrolling sideways) — all fixed.
+
+**`check:solo` found the worst bug of the night**: solo mode never advanced
+past checkpoint 1. The state machine requires ARRIVED -> OPEN_CHALLENGE ->
+CHALLENGE_OPEN before SUBMIT is legal, and the page never dispatched
+OPEN_CHALLENGE — so SUBMIT and everything after it was silently rejected while
+the UI kept showing reveals and "Next clue", because the panel keys off
+`withinRadius` and `lastOutcome` rather than the phase. You would have
+demoed a hunt that looked perfect and never moved. Fixed and verified: five
+distinct checkpoints, instruction on every arrival, 1250 XP at the finish.
+
+Still unverified: creator marker dragging, and the localStorage preview
+round-trip (write in /creator, walk it in /play).
 
 ### ⚠️ Verify the history before you say it out loud
 

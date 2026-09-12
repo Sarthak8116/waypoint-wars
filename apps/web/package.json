@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "next lint --max-warnings 0 || true",
     "test": "vitest run --passWithNoTests",
-    "check:browser": "node scripts/browser-check.mjs"
+    "check:browser": "node scripts/browser-check.mjs",
+    "check:solo": "node scripts/browser-solo-run.mjs"
   },
   "dependencies": {
     "@ww/game": "workspace:*",

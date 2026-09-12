@@ -120,7 +120,12 @@ function SoloHunt({ bundle, routeId }: { bundle: HuntBundle; routeId: string }) 
   const withinRadius = activeCheckpoint ? distanceToTarget <= activeCheckpoint.radiusMeters : false;
 
   useEffect(() => {
-    if (withinRadius && state.phase === 'NAVIGATING') {
+    // NEXT_CHECKPOINT counts as navigable: a player can already be standing on
+    // the next waypoint when it unlocks (the stops are minutes apart, and in
+    // Demo Mode the walk is instant). Watching only for NAVIGATING meant
+    // arrival never fired for checkpoints 2+.
+    const navigable = state.phase === 'NAVIGATING' || state.phase === 'NEXT_CHECKPOINT';
+    if (withinRadius && navigable) {
       hunt.arrive();
       bridgeRef.current?.emit({
         type: 'PLAYER_ARRIVED',
