@@ -65,6 +65,24 @@
 
   --page-pad: 20px;
   --gap: 20px;
+
+  /* ---------------------------------------------------------------------
+   * Legacy aliases.
+   *
+   * The creator dashboard and a few stragglers still reference the old token
+   * names. Mapping them here means the whole app inherits the new language
+   * from ONE place, rather than 27 scattered edits that would each be a
+   * chance to miss one. Prefer the real tokens in new code.
+   * ------------------------------------------------------------------- */
+  --bg: var(--canvas);
+  --surface: var(--panel);
+  --surface-2: var(--panel-raised);
+  --line: var(--border);
+  --accent: var(--cyan);
+  --accent-2: var(--pink);
+  --good: var(--lime);
+  --warn: var(--yellow);
+  --bad: var(--pink);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -338,6 +356,43 @@ a {
   background: var(--yellow);
   color: var(--yellow-ink);
   border-color: var(--yellow-shadow);
+}
+
+/** Legacy alias for `.pill`. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: var(--panel-raised);
+  border: 2px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  flex: none;
+}
+
+.badge.live {
+  background: var(--lime);
+  color: var(--lime-ink);
+  border-color: var(--lime-shadow);
+}
+.badge.mock {
+  background: var(--yellow);
+  color: var(--yellow-ink);
+  border-color: var(--yellow-shadow);
+}
+
+/** Legacy alias: `.btn.primary` used to be the saturated action. */
+.btn.primary {
+  background: var(--pink);
+  color: var(--pink-ink);
+  border: none;
+  box-shadow: 0 7px 0 var(--pink-shadow);
 }
 
 /* ---------------------------------------------------------------------- */
