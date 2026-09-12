@@ -24,7 +24,8 @@ That starts both the Next.js app (`:3000`) and the Colyseus server (`:2567`).
 | `http://localhost:3000` | Home, with live integration status |
 | `http://localhost:3000/play` | **Solo hunt** — full loop, no server or keys needed |
 | `http://localhost:3000/demo` | **Route replay** — three players converging (the pitch) |
-| `http://localhost:3000/lobby` | **Multiplayer** — create/join a room |
+| `http://localhost:3000/lobby` | **Multiplayer** — create/join a room, QR join |
+| `http://localhost:3000/creator` | **Creator dashboard** — build a hunt on the map |
 
 ### The three-minute demo
 
@@ -83,6 +84,22 @@ pnpm typecheck       # whole workspace
 pnpm --filter @ww/data build      # regenerate pittsburgh-hunts.json from the seed
 pnpm --filter @ww/data validate   # check route balance + content integrity
 pnpm --filter @ww/game mock       # Phaser animation harness
+
+pnpm demo:check                   # 19 pre-demo checks — run before presenting
+pnpm demo:reset                   # rebuild content from the seed, revalidate
+```
+
+### Proving it actually works
+
+Unit tests pass on code that does not work — that happened repeatedly during
+this build. These drive the real system instead:
+
+```bash
+# server must be running; use GEMINI_API_KEY= to spend no quota
+pnpm --filter @ww/multiplayer-server e2e        # room forms, privacy, anti-cheat
+pnpm --filter @ww/multiplayer-server e2e:full   # a COMPLETE race, both players
+pnpm --filter @ww/multiplayer-server e2e:team   # team mode: shared route + score
+pnpm --filter @ww/multiplayer-server check:gemini  # real API round-trip
 ```
 
 ---
@@ -138,8 +155,18 @@ not merely hidden in the UI.
 - Checkpoint coordinates are desk estimates from the content seed. The 30–40m
   radii are tight enough that **real-GPS play needs a walk-through first**.
   Demo Mode is unaffected.
-- The live Gemini path runs for the first time when someone submits with a real
-  key set; every test injects a fake client by design.
+- **Gemini rate limits reject submissions.** A throttled verdict comes back as a
+  rejection, so hitting the quota looks like a broken feature rather than a
+  throttled one. `pnpm --filter @ww/multiplayer-server check:gemini` exits 2
+  when rate limited, 1 when actually broken.
 - Real phones need HTTPS for camera and geolocation. `localhost` is exempt, so
   the laptop demo works as-is.
-- Persistence defaults to in-memory and resets on restart.
+- **Solo mode is client-trusting by design.** There is no server-side run state,
+  so a solo player could submit out of order. The server still owns the
+  checkpoint content, the geofence and the XP maths. Multiplayer is fully
+  authoritative.
+- The **Mongo adapter is real but unexercised** — no Atlas URI was available, so
+  it has never connected. Persistence defaults to file-backed storage, which
+  survives restarts.
+- Nobody has run the **creator dashboard** in a live browser; its map
+  interactions are reviewed but unexercised.
