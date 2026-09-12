@@ -187,6 +187,7 @@ pnpm demo:check     # 19 checks — run this BEFORE you present
 pnpm --filter @ww/multiplayer-server e2e        # room forms, one submission
 pnpm --filter @ww/multiplayer-server e2e:full   # a COMPLETE race, both players
 pnpm --filter @ww/multiplayer-server e2e:team   # team mode: shared route + score
+pnpm --filter @ww/multiplayer-server e2e:reconnect  # phone locks mid-hunt
 ```
 
 `e2e:full` is the one that proves the pitch: two players walk different routes

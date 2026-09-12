@@ -248,10 +248,38 @@ export class HuntRoom extends Room<HuntRoomState> {
       const restored = this.state.players.get(client.sessionId);
       if (restored) restored.connected = true;
       this.publishLeaderboard();
+      this.resendActiveCheckpoint(client);
     } catch {
       this.removeMember(client.sessionId);
       this.publishLeaderboard();
     }
+  }
+
+  /**
+   * Re-send the player's current clue after they reconnect.
+   *
+   * XP and progress live in replicated state and come back on their own, but
+   * the active clue does NOT: it is sent once, targeted, over `client.send()`
+   * precisely so opponents never see it. A returning player therefore has
+   * their score and their place in the route, and nothing to walk towards —
+   * a blank screen that looks like the game broke.
+   *
+   * This is the realistic failure: a phone locks mid-hunt, or a tab is
+   * backgrounded long enough to drop the socket.
+   */
+  private resendActiveCheckpoint(client: Client): void {
+    const run = this.runFor(client);
+    if (!run || this.state.startedAt === 0) return;
+
+    const activeId = activeCheckpointId(run);
+    const checkpoint = activeId ? huntStore.getCheckpoint(activeId) : undefined;
+    if (!checkpoint) return;
+
+    this.sendTo(client.sessionId, {
+      type: 'checkpoint_unlocked',
+      index: run.state.activeIndex,
+      checkpoint: toPublicCheckpoint(checkpoint),
+    });
   }
 
   // -------------------------------------------------------------------------

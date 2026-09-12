@@ -15,7 +15,8 @@
     "check:gemini": "tsx scripts/live-gemini-check.mjs",
     "check:demo": "node scripts/demo-check.mjs",
     "e2e:full": "node scripts/e2e-full-race.mjs",
-    "e2e:team": "node scripts/e2e-team-race.mjs"
+    "e2e:team": "node scripts/e2e-team-race.mjs",
+    "e2e:reconnect": "node scripts/e2e-reconnect.mjs"
   },
   "dependencies": {
     "@colyseus/core": "^0.15.57",
