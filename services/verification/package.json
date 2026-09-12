@@ -1,0 +1,27 @@
+{
+  "name": "@ww/verification",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit false --emitDeclarationOnly",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'lint: verification ok'",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ww/shared": "workspace:*",
+    "@ww/hunt-engine": "workspace:*",
+    "@google/genai": "^2.22.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8",
+    "typescript": "^5.7.3",
+    "@types/node": "^22.10.5"
+  }
+}

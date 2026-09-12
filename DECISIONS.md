@@ -63,3 +63,36 @@ Reveals are hand-written from well-established Pittsburgh history with sources
 cited. Anything uncertain is explicitly labeled a legend. AI-generated history
 is never auto-published — it requires human review per the original spec.
 **Flag for the user: verify the historical claims before demoing them publicly.**
+
+## D12 — Gemini's answer judgement is advisory; string matching decides
+`verifySubmission` accepts or rejects on `matchesAcceptedAnswer()`, a
+deterministic comparison we own. Gemini's `answerCorrect` only feeds confidence
+and the explanation text. The accepted answers are known exactly, so there is no
+reason to let a model overrule a string comparison — and a model that can be
+argued into "correct" is a trivially exploitable scoring oracle. There is a test
+that submits an actual prompt-injection string as the answer with the model
+asserting `answerCorrect: true` at confidence 0.99, and asserts rejection.
+
+## D13 — Geofence runs before Gemini, not after
+Outside the radius, the submission is rejected without an API call. Saves money
+and latency, and means a player spoofing photos from home never reaches the model.
+
+## D14 — Confidence threshold 0.55
+Low on purpose. By the time confidence is consulted, the submission has cleared
+four independent gates (radius, landmark, an action the player could not have
+known in advance, and our own answer match). Confidence is the tie-breaker, not
+the decision. The asymmetry favours leniency: a false rejection is a real person
+standing outdoors in bad light retaking a photo; a false approval is 150 XP in a
+hackathon game.
+
+## D15 — OPEN ITEM for P7: submission/checkpoint binding
+`verifySubmission` trusts its caller about which checkpoint is active — only the
+Colyseus room knows the player's index. **The room must assert that
+`submission.checkpointId` equals the player's active checkpoint id before
+calling.** Without that assertion a client could submit a photo taken at
+checkpoint 1 against checkpoint 4's geofence. Not yet implemented.
+
+## D16 — OPEN ITEM: live Gemini path is unexercised
+Every verification test injects a fake client by design, so the real API path
+runs for the first time when someone submits with `GEMINI_API_KEY` set. Budget
+time to try one real photo before demoing.
