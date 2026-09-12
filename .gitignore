@@ -17,3 +17,11 @@ out/
 coverage/
 .pnpm-store/
 /tmp/
+
+# ruflo / agent runtime artifacts
+.claude-flow/
+.swarm/
+.hive-mind/
+
+# synced at build time from data/
+apps/web/public/hunts/

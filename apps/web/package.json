@@ -3,27 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000",
-    "build": "next build",
+    "dev": "node scripts/sync-content.mjs && next dev -p 3000",
+    "build": "node scripts/sync-content.mjs && next build",
     "start": "next start -p 3000",
     "typecheck": "tsc --noEmit",
     "lint": "next lint --max-warnings 0 || true",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@ww/shared": "workspace:*",
     "@ww/hunt-engine": "workspace:*",
-    "next": "^15.1.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "maplibre-gl": "^5.1.0",
+    "@ww/shared": "workspace:*",
     "colyseus.js": "^0.15.26",
-    "qrcode": "^1.5.4"
+    "maplibre-gl": "^5.1.0",
+    "next": "^15.1.6",
+    "qrcode": "^1.5.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
-    "@types/qrcode": "^1.5.5",
     "typescript": "^5.7.3",
     "vitest": "^2.1.8"
   }
