@@ -183,6 +183,16 @@ pnpm dev            # web :3000 + server :2567
 pnpm demo:check     # 19 checks — run this BEFORE you present
 ```
 
+```bash
+pnpm --filter @ww/multiplayer-server e2e        # room forms, one submission
+pnpm --filter @ww/multiplayer-server e2e:full   # a COMPLETE race, both players
+```
+
+`e2e:full` is the one that proves the pitch: two players walk different routes
+to completion, converge on The Point, and get an ordered leaderboard. Run it
+with the server booted WITHOUT a Gemini key (`GEMINI_API_KEY= npx tsx
+src/index.ts`) so it uses the deterministic mock and costs zero quota.
+
 `demo:check` verifies the things that actually broke during this build, not the
 things that are easy to check: that Gemini is live rather than mocked, that
 every route serves, that the content is the real hunt and not the placeholder,

@@ -21,9 +21,24 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+
+/**
+ * Precedence: real environment > .env.local > .env
+ *
+ * `override: true` is needed so `.env.local` beats `.env`, but on its own it
+ * also clobbers variables set on the command line — so `GEMINI_API_KEY= pnpm
+ * start` or `PORT=9999 pnpm start` would be silently ignored, which is
+ * astonishing and cost real debugging time. Snapshot what the process was
+ * actually given, then put it back on top.
+ */
+const explicitEnv = new Map(
+  Object.entries(process.env).filter(([, v]) => v !== undefined) as Array<[string, string]>,
+);
+
 loadEnv({ path: resolve(repoRoot, '.env') });
-// `override` so .env.local beats an earlier .env, matching Next.js's precedence.
 loadEnv({ path: resolve(repoRoot, '.env.local'), override: true });
+
+for (const [key, value] of explicitEnv) process.env[key] = value;
 
 import http from 'node:http';
 import express, { type Express } from 'express';
