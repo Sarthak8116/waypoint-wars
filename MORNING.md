@@ -32,7 +32,37 @@ through `/play` before you present. My check used a blank test image — the
 pipeline is proven, the *landmark matching quality* on your specific
 checkpoints is not.
 
-### ⚠️ Gemini rate limits are a live demo risk
+### 🔴 YOUR GEMINI QUOTA IS EXHAUSTED — check this first
+
+Verification currently returns:
+
+> *"Verification is rate limited right now. Nothing was judged."*
+
+The raw API says: **"You exceeded your current quota, please check your plan and
+billing details."** That is a hard quota message, not a per-minute throttle.
+
+I caused it — roughly 25 calls benchmarking models and latency. Free-tier daily
+limits are small. **It may reset on its own overnight; it may not.**
+
+Do this before anything else:
+
+1. `pnpm --filter @ww/multiplayer-server check:gemini`
+   · exit 0 = working · **exit 2 = rate limited** · exit 1 = actually broken
+2. If still limited, check https://aistudio.google.com/apikey — quota and plan.
+3. **A rate-limited verdict REJECTS the submission.** If this is still live at
+   demo time, every photo fails and it looks like the feature is broken.
+
+Mitigations if the quota does not come back:
+- `GEMINI_MODEL_ID=gemini-flash-lite-latest` in `.env.local` — a different
+  model may have separate quota, and it is 5x faster anyway
+- Use a different API key
+- Fall back to `/demo`, which needs no API calls at all and is the strongest
+  part of the pitch regardless
+
+I am deliberately not making more Gemini calls tonight so I do not dig the hole
+deeper.
+
+### ⚠️ Latency and rate limits, for reference
 
 I exhausted the free-tier quota benchmarking, and the provider correctly
 reported *"Verification is rate limited right now."* Two things follow:

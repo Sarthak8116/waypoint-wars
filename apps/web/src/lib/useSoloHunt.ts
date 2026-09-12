@@ -22,7 +22,7 @@ import {
   type HuntState,
   type HuntAction,
 } from '@ww/hunt-engine';
-import type { Checkpoint, VerificationResult, XpBreakdown } from '@ww/shared';
+import type { Checkpoint, SubmissionVerdict, VerificationResult, XpBreakdown } from '@ww/shared';
 
 export interface SubmissionOutcomeView {
   outcome: 'approved' | 'rejected' | 'needs-review';
@@ -31,6 +31,12 @@ export interface SubmissionOutcomeView {
   breakdown?: XpBreakdown;
   reveal?: { name: string; historicalReveal: string; sources: Checkpoint['sources'] };
   verification?: VerificationResult;
+  /**
+   * Set when the photo could NOT be checked and the result rests on the answer
+   * alone. The UI must show this — an unverified pass presented as verified is
+   * exactly the silent degradation this project keeps getting bitten by.
+   */
+  degraded?: string;
 }
 
 const reducer = (state: HuntState, action: HuntAction): HuntState => transition(state, action);
@@ -111,7 +117,17 @@ export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
       dispatch({ type: 'SUBMIT', checkpointIndex: state.activeIndex, now });
       setVerifying(true);
 
-      let result: VerificationResult | null = null;
+      /**
+       * `/api/verify` returns a full SubmissionVerdict, not a bare
+       * VerificationResult — the server has already combined the model's
+       * judgement with its own geofence check. Take `.verification` off it
+       * rather than reading fields that only exist one level down; casting the
+       * verdict to the inner type silently yields `undefined` for every field,
+       * and every submission gets rejected.
+       */
+      let verdict: SubmissionVerdict | null = null;
+      let degraded: string | null = null;
+
       try {
         const res = await fetch(`${apiUrl}/api/verify`, {
           method: 'POST',
@@ -126,15 +142,32 @@ export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
             submittedAt: now,
           }),
         });
-        if (res.ok) result = (await res.json()) as VerificationResult;
-      } catch {
-        // Fall through to the local path below.
+
+        if (res.ok) {
+          verdict = (await res.json()) as SubmissionVerdict;
+        } else {
+          // NEVER silent. A missing endpoint once made solo mode look like it
+          // verified photos while never calling the model at all.
+          degraded = `server returned ${res.status}`;
+          console.error(`[verify] photo verification unavailable (${degraded}) — answer-only.`);
+        }
+      } catch (err) {
+        degraded = err instanceof Error ? err.message : 'network error';
+        console.error(`[verify] photo verification unreachable (${degraded}) — answer-only.`);
       }
+
+      const result: VerificationResult | null = verdict?.verification ?? null;
 
       // The deterministic answer check is authoritative either way — the same
       // rule the server applies (see DECISIONS.md D12).
       const answerCorrect = matchesAcceptedAnswer(answer, cp.acceptedAnswers);
-      const landmarkOk = result ? result.landmarkMatch && result.requiredActionCompleted : true;
+
+      // With a verdict, trust the server's photo judgement. Without one we
+      // cannot judge the photo at all, so we accept on the answer alone and
+      // say so — a degraded pass that claims to be verified would be a lie.
+      const landmarkOk = verdict
+        ? verdict.verification.landmarkMatch && verdict.verification.requiredActionCompleted
+        : true;
       const approved = answerCorrect && landmarkOk;
 
       setVerifying(false);
@@ -148,6 +181,7 @@ export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
             : (result?.reason ?? 'The photo did not match the landmark or the required action.'),
           xpAwarded: 0,
           ...(result ? { verification: result } : {}),
+          ...(degraded ? { degraded } : {}),
         });
         return;
       }
@@ -181,11 +215,12 @@ export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
 
       setLastOutcome({
         outcome: 'approved',
-        message: 'Verified.',
+        message: degraded ? 'Answer accepted — photo NOT verified.' : 'Verified.',
         xpAwarded: breakdown.total,
         breakdown,
         reveal: { name: cp.name, historicalReveal: cp.historicalReveal, sources: cp.sources },
         ...(result ? { verification: result } : {}),
+        ...(degraded ? { degraded } : {}),
       });
     },
     [activeCheckpoint, activeProgress, checkpoints.length, instruction, state.activeIndex],

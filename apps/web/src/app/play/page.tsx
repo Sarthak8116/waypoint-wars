@@ -329,7 +329,15 @@ function SoloPanel(props: {
   if (lastOutcome?.outcome === 'approved' && lastOutcome.reveal) {
     return (
       <div style={sheet}>
-        <span className="badge live">+{lastOutcome.xpAwarded} XP · verified</span>
+        <span className={`badge ${lastOutcome.degraded ? 'mock' : 'live'}`}>
+          +{lastOutcome.xpAwarded} XP · {lastOutcome.degraded ? 'photo NOT verified' : 'verified'}
+        </span>
+        {lastOutcome.degraded && (
+          <p style={{ color: 'var(--warn)', fontSize: 12, margin: '8px 0 0' }}>
+            ⚠ Photo verification was unavailable ({lastOutcome.degraded}); this was accepted on the
+            written answer alone.
+          </p>
+        )}
         <h2 style={{ margin: '10px 0 8px', fontSize: 22 }}>{lastOutcome.reveal.name}</h2>
         <p style={{ fontSize: 16, lineHeight: 1.6, marginTop: 0 }}>
           {lastOutcome.reveal.historicalReveal}
