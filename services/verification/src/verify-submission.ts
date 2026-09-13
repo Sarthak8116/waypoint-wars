@@ -207,12 +207,35 @@ export async function verifySubmission(
         )
       : normalizeResult(await provider.verify(toVerificationInput(submission, checkpoint)));
   } catch {
-    return rejection(
-      inconclusiveResult('The verification provider failed to return a judgement.', false),
+    /**
+     * OUR failure, so the player must not pay for it.
+     *
+     * This returned `rejected`, which the room turns into VERIFICATION_FAILED
+     * — an incorrect attempt, and -15 XP on the eventual successful submission.
+     * Meanwhile the message it carries says "nothing was counted against you",
+     * which was simply false.
+     *
+     * It is not hypothetical. Sampling the deployed verifier right now, three
+     * of six calls come back rate-limited, so a player could lose 45 XP across
+     * a hunt to an outage they had no part in, while being told each time that
+     * it cost them nothing.
+     *
+     * `needs-review` is the outcome that already means exactly this: held, no
+     * charge, submit again. The room restores the prior state for it and the
+     * UI reads "Not sure yet · nothing charged".
+     */
+    return {
+      outcome: 'needs-review',
+      verification: inconclusiveResult(
+        'The verification provider failed to return a judgement.',
+        false,
+      ),
       withinRadius,
       distanceMeters,
-      VERDICT_MESSAGES.unverified,
-    );
+      xpDelta: 0,
+      xpBreakdown: emptyBreakdown(),
+      message: VERDICT_MESSAGES.unverified,
+    };
   }
 
   // ---- Gate 3: the answer, decided by us ----------------------------------

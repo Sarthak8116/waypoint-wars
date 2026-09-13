@@ -17,26 +17,30 @@ Open these tabs in advance and leave them loaded:
 `?demo=1` matters: it latches Demo Mode for the whole session, so no screen
 asks for GPS mid-presentation.
 
-### ⚠ Read this before you demo photo verification
+### Photo verification is a coin flip right now
 
-**On the deployed server today, every photo submission is rejected.** The
-Gemini key is on the free tier, its per-model quota is exhausted, and
-verification answers:
+Measured against the deployed server: **three of six** submissions get a real
+verdict; the other three come back *"Verification is rate limited right now."*
+The Gemini key is on the free tier and its per-model quota keeps running dry.
 
-> "We couldn't check that photo just now — nothing was counted against you."
+So a photo submission on stage has roughly even odds. Plan for it:
 
-Solo is unaffected — it scores on the written answer and labels the result
-"photo NOT verified". Multiplayer photo submission is not demoable until the
-server is redeployed:
+- **Solo is unaffected.** It scores on the written answer and labels the result
+  "photo NOT verified" — honest, and it always completes.
+- **A rate-limited submission no longer costs the player anything.** It used to
+  return a rejection, which recorded an incorrect attempt and took 15 XP for
+  our outage while telling the player "nothing was counted against you". It now
+  reads *"Not sure yet · nothing charged"* and you submit again. **This fix is
+  server-side and is NOT deployed** — see the warning above.
+- If you want reliable verification, deploy the fallback model:
 
 ```bash
 railway variables --set ALLOW_PHOTOLESS_SUBMISSIONS=true
 railway up --service waypoint-server --detach
 ```
 
-That ships a fallback model, which is quota-healthy, and photo verification
-starts working again. Until then, **demo the loop in solo** and describe photo
-verification rather than attempting it live.
+`gemini-flash-lite-latest` has its own quota and has answered every time it has
+been tried.
 
 ---
 

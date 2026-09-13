@@ -347,23 +347,37 @@ describe('verifySubmission', () => {
     }
   });
 
-  it('degrades to a rejection when the provider throws, instead of crashing', async () => {
+  /**
+   * A provider failure is OURS, and the player must not pay for it.
+   *
+   * This used to return `rejected`, which the room turns into
+   * VERIFICATION_FAILED — an incorrect attempt, and -15 XP on the eventual
+   * successful submission — while carrying a message that says "nothing was
+   * counted against you". Sampling the deployed verifier, three of six calls
+   * come back rate-limited, so a player could lose 45 XP across one hunt to an
+   * outage they had no part in.
+   *
+   * `needs-review` already means held, no charge, submit again.
+   */
+  it('holds rather than rejects when the provider throws', async () => {
     const verdict = await verifySubmission(submission(), CHECKPOINT, throwingProvider(), OPTS);
 
-    expect(verdict.outcome).toBe('rejected');
+    expect(verdict.outcome).toBe('needs-review');
     expect(verdict.verification.confidence).toBe(0);
     expect(verdict.verification.landmarkMatch).toBe(false);
     expect(verdict.xpDelta).toBe(0);
     expect(verdict.message).toBe(VERDICT_MESSAGES.unverified);
+    // The message promises no penalty; the outcome has to keep that promise.
+    expect(verdict.outcome).not.toBe('rejected');
   });
 
-  it('degrades to a rejection when the provider hangs and is aborted', async () => {
+  it('holds rather than rejects when the provider hangs and is aborted', async () => {
     const timingOut: VerificationProvider = {
       verify: () => Promise.reject(new Error('The operation was aborted due to timeout')),
     };
     const verdict = await verifySubmission(submission(), CHECKPOINT, timingOut, OPTS);
 
-    expect(verdict.outcome).toBe('rejected');
+    expect(verdict.outcome).toBe('needs-review');
     expect(verdict.verification.confidence).toBe(0);
     expect(verdict.message).toBe(VERDICT_MESSAGES.unverified);
   });
