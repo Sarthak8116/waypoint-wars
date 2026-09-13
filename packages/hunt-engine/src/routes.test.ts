@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { balanceRoutes, orderPath, routeMeters } from './generate.js';
-import type { Place } from './places.js';
+import { balanceRoutes, orderPath, routeMeters } from './routes.js';
+
 
 /**
  * The balancer and the final assembly must agree on route ORDER.
@@ -11,21 +11,25 @@ import type { Place } from './places.js';
  * 2227m / 1426m / 1098m — a 51% spread — from a balancer that thought it was
  * finished. Measuring the ordered path took that to 4%.
  */
-function at(id: string, lat: number, lon: number): Place {
+/** The minimum a route stop needs: an identity and coordinates. */
+interface Stop {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
+function at(id: string, lat: number, lon: number): Stop {
   return {
     id,
     name: id,
     latitude: lat,
     longitude: lon,
-    kind: 'monument',
-    tags: {},
-    distanceMeters: 0,
-    score: 1,
   };
 }
 
 const FINISH = at('finish', 0, 0);
-const lengthOf = (stops: Place[]) => routeMeters([...stops, FINISH]);
+const lengthOf = (stops: Stop[]) => routeMeters([...stops, FINISH]);
 
 describe('balanceRoutes', () => {
   it('returns routes already in walked order', () => {
@@ -66,7 +70,7 @@ describe('balanceRoutes', () => {
     ];
     const ids = balanceRoutes(routes, FINISH)
       .flat()
-      .map((p) => p.id)
+      .map((p: Stop) => p.id)
       .sort();
     expect(ids).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
   });

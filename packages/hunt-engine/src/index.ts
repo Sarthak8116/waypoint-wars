@@ -13,3 +13,4 @@ export * from './answers.js';
 export * from './route-assignment.js';
 export * from './instructions.js';
 export { createRng, hashString, shuffle } from './random.js';
+export * from './routes.js';

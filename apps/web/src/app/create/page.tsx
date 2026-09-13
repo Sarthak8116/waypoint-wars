@@ -19,12 +19,16 @@
  */
 
 import { useMemo, useCallback, useRef, useState } from 'react';
+import { balanceRoutes, routeMeters } from '@ww/hunt-engine';
 import { isUnsuitable } from '@ww/shared';
 import { CREATOR_PREVIEW_KEY } from '@/lib/huntData';
 import type { Checkpoint, Hunt, HuntDuration, Route } from '@ww/shared';
 import BackButton from '@/components/BackButton';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:2567';
+
+/** Matches the generator's own warning threshold. Keep the two in step. */
+const ROUTE_SPREAD_WARNING = 0.25;
 
 interface GenerateReport {
   resolvedPlace: string;
@@ -150,6 +154,75 @@ export default function CreatePage() {
       flagged.unshift(finish);
     }
     return flagged;
+  }, [result]);
+
+  /**
+   * How lopsided the routes are, as a fraction of the longest.
+   *
+   * The server already warns about this. Until now the warning named a
+   * problem with no remedy — the author could read "routes differ by 41%"
+   * and do nothing about it. The balancer is pure geometry, so it can run
+   * right here on the result the server returned.
+   */
+  const spread = useMemo(() => {
+    const lengths = result?.report.routeSummary.map((r) => r.meters) ?? [];
+    if (lengths.length < 2) return 0;
+    /**
+     * The SERVER's metric, deliberately: worst deviation from the mean, not
+     * (max - min) / max. Two different measures of the same thing let the
+     * warning and the remedy disagree — the page could say "routes differ by
+     * 41%" while offering no way to fix it, or offer a fix for routes it had
+     * just called fine. Same number, same threshold, one story.
+     */
+    const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+    if (mean === 0) return 0;
+    return Math.max(...lengths.map((l) => Math.abs(l - mean) / mean));
+  }, [result]);
+
+  /**
+   * Re-deal the stops between routes so everyone walks a similar distance.
+   *
+   * An explicit action, not a silent rewrite: this is an authoring tool and
+   * the human is reviewing before publishing. It never changes WHICH stops
+   * are in the hunt, only which route each belongs to, and the finish is
+   * fixed for everyone by definition.
+   */
+  const rebalance = useCallback(() => {
+    if (!result) return;
+    const byId = new Map(result.checkpoints.map((c) => [c.id, c]));
+    const finish = result.hunt.finalDestination;
+
+    const dealt = result.routes.map((r) =>
+      r.checkpointIds
+        .filter((id) => id !== finish.id)
+        .map((id) => byId.get(id))
+        .filter((c): c is Checkpoint => Boolean(c)),
+    );
+
+    const balanced = balanceRoutes(dealt, finish);
+    const routes = result.routes.map((r, i) => {
+      const stops = balanced[i] ?? [];
+      return {
+        ...r,
+        checkpointIds: [...stops.map((c) => c.id), finish.id],
+        approxDistanceMeters: routeMeters([...stops, finish]),
+      };
+    });
+
+    setResult({
+      ...result,
+      routes,
+      report: {
+        ...result.report,
+        routeSummary: routes.map((r) => ({
+          id: r.id,
+          label: r.label,
+          stops: r.checkpointIds.length,
+          meters: r.approxDistanceMeters,
+        })),
+        warnings: result.report.warnings.filter((w) => !/differ by \d+%/i.test(w)),
+      },
+    });
   }, [result]);
 
   const playSolo = useCallback(() => {
@@ -429,6 +502,22 @@ export default function CreatePage() {
               ))}
             </div>
           </details>
+
+          {spread > ROUTE_SPREAD_WARNING && (
+            <div className="card" style={{ borderColor: 'var(--yellow)' }}>
+              <p className="label" style={{ color: 'var(--yellow)', marginBottom: 8 }}>
+                Routes are {Math.round(spread * 100)}% apart
+              </p>
+              <p style={{ margin: '0 0 12px', fontSize: 15 }}>
+                The shortest route wins on time alone. Re-dealing the stops keeps the
+                same checkpoints and the same finish — it only changes which route
+                each one belongs to.
+              </p>
+              <button className="btn btn-yellow btn-block" onClick={rebalance}>
+                Even out the routes
+              </button>
+            </div>
+          )}
 
           {unsafeStops.length > 0 && (
             <div className="card" style={{ borderColor: 'var(--pink)', borderWidth: 3 }}>

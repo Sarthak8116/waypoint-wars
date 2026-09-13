@@ -13,6 +13,7 @@
  *   · everyone converges on the same finish
  */
 
+import { balanceRoutes, orderPath, routeMeters } from '@ww/hunt-engine';
 import {
   HUNT_DURATION_MINUTES,
   haversineMeters,
@@ -134,78 +135,7 @@ function dealRoutes(pool: Place[], routeCount: number, stopsPerRoute: number): P
  * strictly reduces the spread. Greedy and bounded; it will not find an optimum
  * and does not need to.
  */
-/**
- * Nearest-neighbour ordering, starting from the first stop.
- *
- * Extracted because the balancer and the final assembly MUST agree on it.
- * They used to disagree: the balancer measured the dealt order while the
- * route was re-ordered into a path afterwards, so it spent forty passes
- * optimising a distance nobody walks. Savannah came out 2227m / 1426m /
- * 1098m — a 51% spread — from a balancer that believed it was done.
- */
-export function orderPath(stops: Place[]): Place[] {
-  const remaining = [...stops];
-  const ordered: Place[] = [];
-  let current = remaining.shift();
-  if (!current) return ordered;
-  ordered.push(current);
-  while (remaining.length) {
-    remaining.sort((a, b) => haversineMeters(current!, a) - haversineMeters(current!, b));
-    current = remaining.shift()!;
-    ordered.push(current);
-  }
-  return ordered;
-}
 
-export function balanceRoutes(routes: Place[][], finish: Place): Place[][] {
-  // Measure what the player actually walks: ordered stops, then the finish.
-  const lengthOf = (stops: Place[]) => routeMeters([...orderPath(stops), finish]);
-  const spread = (rs: Place[][]) => {
-    const ls = rs.map(lengthOf);
-    return Math.max(...ls) - Math.min(...ls);
-  };
-
-  const working = routes.map((r) => [...r]);
-  if (working.length < 2) return working;
-
-  for (let pass = 0; pass < 40; pass++) {
-    const lengths = working.map(lengthOf);
-    const longest = lengths.indexOf(Math.max(...lengths));
-    const shortest = lengths.indexOf(Math.min(...lengths));
-    if (longest === shortest) break;
-
-    const before = spread(working);
-    let improved = false;
-
-    // Try swapping each stop of the longest against each of the shortest.
-    for (let i = 0; i < working[longest]!.length && !improved; i++) {
-      for (let j = 0; j < working[shortest]!.length && !improved; j++) {
-        const a = working[longest]![i]!;
-        const b = working[shortest]![j]!;
-        working[longest]![i] = b;
-        working[shortest]![j] = a;
-
-        if (spread(working) < before) improved = true;
-        else {
-          // revert
-          working[longest]![i] = a;
-          working[shortest]![j] = b;
-        }
-      }
-    }
-
-    if (!improved) break;
-  }
-
-  // Same ordering the balancer measured, so the two cannot drift apart.
-  return working.map(orderPath);
-}
-
-export function routeMeters(stops: Array<{ latitude: number; longitude: number }>): number {
-  let total = 0;
-  for (let i = 1; i < stops.length; i++) total += haversineMeters(stops[i - 1]!, stops[i]!);
-  return Math.round(total);
-}
 
 /**
  * Pick a place a group of strangers can actually be told to meet at.
