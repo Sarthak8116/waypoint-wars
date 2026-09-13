@@ -132,6 +132,17 @@ export interface RoomView {
   lastAward: number | null;
   /** The eight components behind that number. Sent with every verdict. */
   lastBreakdown: XpBreakdown | null;
+  /**
+   * Which of the three outcomes the last submission got.
+   *
+   * Rejected and needs-review are NOT the same thing and the server treats
+   * them very differently: a rejection applies VERIFICATION_FAILED and its -15
+   * penalty, while needs-review restores the prior state and costs nothing.
+   * The client collapsed both into one message and rendered it in a card
+   * headed "Not accepted · -15 XP", charging the player for something the
+   * server had explicitly not charged them for.
+   */
+  lastVerdict: 'approved' | 'rejected' | 'needs-review' | null;
   /** True when the photo could not be judged — never dressed up as verified. */
   lastDegraded: boolean;
   /**
@@ -163,6 +174,7 @@ const initialView: RoomView = {
   lastReveal: null,
   lastAward: null,
   lastBreakdown: null,
+  lastVerdict: null,
   lastDegraded: false,
   lastMocked: false,
   error: null,
@@ -193,6 +205,7 @@ export function useHuntRoom() {
           return {
             ...v,
             lastMessage: msg.verdict.message,
+            lastVerdict: msg.verdict.outcome,
             // XP still comes from score_update; never trust a local sum.
             // xpDelta here is only the headline on the reward panel.
             ...(msg.verdict.outcome === 'approved' && msg.verdict.reveal

@@ -669,12 +669,34 @@ export default function RacePage() {
               }}
             />
 
-            {/* A rejection must always name the way out. */}
+            {/* A rejection must always name the way out — and must not be
+                confused with a held submission, which costs nothing. */}
             {view.lastMessage && (
-              <div className="card" style={{ borderColor: 'var(--pink)', marginTop: 14 }}>
-                <p className="label" style={{ color: 'var(--pink)', marginBottom: 8 }}>
-                  Not accepted{' '}
-                  <span style={{ opacity: 0.75 }}>· {XP_RULES.INCORRECT_PENALTY} XP</span>
+              <div
+                className="card"
+                style={{
+                  borderColor:
+                    view.lastVerdict === 'needs-review' ? 'var(--yellow)' : 'var(--pink)',
+                  marginTop: 14,
+                }}
+              >
+                <p
+                  className="label"
+                  style={{
+                    color: view.lastVerdict === 'needs-review' ? 'var(--yellow)' : 'var(--pink)',
+                    marginBottom: 8,
+                  }}
+                >
+                  {view.lastVerdict === 'needs-review' ? (
+                    <>
+                      Not sure yet <span style={{ opacity: 0.75 }}>· nothing charged</span>
+                    </>
+                  ) : (
+                    <>
+                      Not accepted{' '}
+                      <span style={{ opacity: 0.75 }}>· {XP_RULES.INCORRECT_PENALTY} XP</span>
+                    </>
+                  )}
                 </p>
                 <p style={{ margin: '0 0 10px', fontSize: 15 }}>{view.lastMessage}</p>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
