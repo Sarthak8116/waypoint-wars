@@ -37,6 +37,17 @@ export default function LocationGate({ onReady }: { onReady: (b: HuntBundle) => 
   const [phase, setPhase] = useState<Phase>('asking');
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [nearby, setNearby] = useState<NearbyHunt[]>([]);
+  /**
+   * True when the search could not be performed at all.
+   *
+   * Distinct from finding nothing, and the distinction is the whole point: an
+   * empty result means "we looked and there is nothing here", which is a claim
+   * about the world. A failed lookup means we do not know. Telling a player
+   * standing in Market Square that there is no hunt within five miles — while
+   * the seeded Pittsburgh hunt starts at Market Square — is simply false, and
+   * that is what this screen did whenever /api/hunts/nearby was unavailable.
+   */
+  const [lookupFailed, setLookupFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stage, setStage] = useState('');
   const [manual, setManual] = useState('');
@@ -112,11 +123,16 @@ export default function LocationGate({ onReady }: { onReady: (b: HuntBundle) => 
             const res = await fetch(
               `${API_URL}/api/hunts/nearby?lat=${here.latitude}&lng=${here.longitude}`,
             );
+            // Checked, because a 404 body parses to {} and `hunts ?? []` then
+            // reports an empty search that never happened.
+            if (!res.ok) throw new Error(`nearby lookup returned ${res.status}`);
             const data = (await res.json()) as { hunts?: NearbyHunt[] };
             setNearby(data.hunts ?? []);
+            setLookupFailed(false);
           } catch {
-            // A failed lookup is not fatal — offer to generate instead.
+            // Not fatal — but not "there is nothing here" either.
             setNearby([]);
+            setLookupFailed(true);
           }
           setPhase('choose');
         })();
@@ -253,10 +269,13 @@ export default function LocationGate({ onReady }: { onReady: (b: HuntBundle) => 
           ) : (
             <>
               <div>
-                <h2 style={{ marginBottom: 8 }}>Nothing here yet</h2>
+                <h2 style={{ marginBottom: 8 }}>
+                  {lookupFailed ? "Couldn't check for hunts nearby" : 'Nothing here yet'}
+                </h2>
                 <p className="muted" style={{ fontSize: 17 }}>
-                  No hunt within five miles. Want one built from the landmarks around
-                  you right now?
+                  {lookupFailed
+                    ? "The server didn't answer, so there may well be a hunt near you — we just can't see it from here. You can still build one, or play the Pittsburgh hunt."
+                    : 'No hunt within five miles. Want one built from the landmarks around you right now?'}
                 </p>
               </div>
               <button
