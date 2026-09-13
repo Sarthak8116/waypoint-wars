@@ -101,6 +101,25 @@ async function main() {
       hasDrafts ? 'degraded, and says so' : 'clean run',
     );
 
+    /**
+     * Same shape as the draft assertion: a hunt containing somewhere people
+     * should not be sent is a legitimate thing for an older or unfiltered
+     * server to return — silently rendering it as a normal stop is not.
+     */
+    const names = await page.$$eval('body', () => {
+      const t = document.body.innerText;
+      return /police|sheriff|customs|border protection|immigration|correctional|prison|military|embassy|consulate|hospital|school/i.test(t);
+    });
+    if (names) {
+      check(
+        'an unsuitable stop is called out, not rendered as normal',
+        /Do not send people here/i.test(body),
+        'flagged',
+      );
+    } else {
+      check('no unsuitable stops to call out', true, 'clean');
+    }
+
     // Nothing is published without a person choosing to.
     check('publishing is a deliberate act', /Publish this hunt/i.test(body));
     check('you can walk it before publishing', /Play it now, solo/i.test(body));

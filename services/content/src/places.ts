@@ -15,7 +15,7 @@
  * modest request rates — see USAGE below.
  */
 
-import type { LatLng } from '@ww/shared';
+import { isUnsuitable, type LatLng } from '@ww/shared';
 
 /**
  * USAGE POLICY, honoured deliberately.
@@ -235,71 +235,9 @@ async function queryOverpass(query: string): Promise<unknown> {
     : new PlacesError('Could not reach any map data service.', 'unreachable');
 }
 
-/**
- * Reject landmarks that are a bad idea to send a player to.
- *
- * This is a safety filter, not a taste one. The generator sends strangers to
- * stand outside a building and take a photograph of it, and there are places
- * where doing that gets someone questioned by security or worse. Observed
- * live: a Savannah hunt chose a **U.S. Customs and Border Protection**
- * facility as its grand finale, which every player would have converged on.
- *
- * Also excludes places where loitering with a camera is simply wrong —
- * hospitals, schools, childcare — regardless of how "historic" OSM thinks
- * they are.
- *
- * Deliberately conservative: a false positive costs one candidate out of
- * dozens, while a false negative points a group of people at a federal
- * building.
- */
-const UNSUITABLE_NAME = new RegExp(
-  [
-    'police',
-    'sheriff',
-    'customs',
-    'border protection',
-    'immigration',
-    'correctional',
-    '\\bprison\\b',
-    '\\bjail\\b',
-    'courthouse annex',
-    'military',
-    '\\barmy\\b',
-    '\\bnavy\\b',
-    'air force',
-    'barracks',
-    'embassy',
-    'consulate',
-    'hospital',
-    'medical cent',
-    'emergency room',
-    'school',
-    'kindergarten',
-    'childcare',
-    'nursery',
-    'power station',
-    'substation',
-    'water treatment',
-  ].join('|'),
-  'i',
-);
-
-const UNSUITABLE_TAGS: Array<[string, RegExp]> = [
-  ['amenity', /^(police|prison|fire_station|hospital|clinic|doctors|school|kindergarten|childcare|courthouse)$/i],
-  ['military', /./],
-  ['office', /^(government|diplomatic)$/i],
-  ['healthcare', /./],
-  ['power', /./],
-  ['landuse', /^(military|industrial)$/i],
-];
-
-export function isUnsuitable(name: string, tags: Record<string, string>): boolean {
-  if (UNSUITABLE_NAME.test(name)) return true;
-  return UNSUITABLE_TAGS.some(([key, pattern]) => {
-    const value = tags[key];
-    return typeof value === 'string' && pattern.test(value);
-  });
-}
+// The filter itself lives in @ww/shared: the browser needs it too, so it is
+// part of the contract rather than of this service.
+export { isUnsuitable } from '@ww/shared';
 
 /**
  * Find named landmarks within `radiusMeters` of a point.

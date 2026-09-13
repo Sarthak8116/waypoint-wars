@@ -18,7 +18,8 @@
  *     Generated history is never told to a player as fact unseen.
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useMemo, useCallback, useRef, useState } from 'react';
+import { isUnsuitable } from '@ww/shared';
 import { CREATOR_PREVIEW_KEY } from '@/lib/huntData';
 import type { Checkpoint, Hunt, HuntDuration, Route } from '@ww/shared';
 import BackButton from '@/components/BackButton';
@@ -132,6 +133,25 @@ export default function CreatePage() {
    * it. Writing it here means the hunt does not have to be published — or even
    * reachable by id — to be playable.
    */
+  /**
+   * Landmarks in THIS result that should not have been chosen.
+   *
+   * The generator filters these out — but only a server running that filter
+   * does, and a hunt is rendered here by whatever server answered. A Savannah
+   * hunt generated today finishes at a U.S. Customs and Border Protection
+   * facility, which every route converges on. Checking what we were handed
+   * costs nothing and fails safe.
+   */
+  const unsafeStops = useMemo(() => {
+    if (!result) return [];
+    const flagged = result.checkpoints.filter((c) => isUnsuitable(c.name));
+    const finish = result.hunt.finalDestination;
+    if (isUnsuitable(finish.name) && !flagged.some((c) => c.id === finish.id)) {
+      flagged.unshift(finish);
+    }
+    return flagged;
+  }, [result]);
+
   const playSolo = useCallback(() => {
     if (!result) return;
     try {
@@ -409,6 +429,23 @@ export default function CreatePage() {
               ))}
             </div>
           </details>
+
+          {unsafeStops.length > 0 && (
+            <div className="card" style={{ borderColor: 'var(--pink)', borderWidth: 3 }}>
+              <p className="label" style={{ color: 'var(--pink)', marginBottom: 8 }}>
+                ⚠ Do not send people here
+              </p>
+              <p style={{ margin: '0 0 10px', fontSize: 15 }}>
+                {unsafeStops.length === 1 ? 'One stop is' : `${unsafeStops.length} stops are`} a
+                place where standing outside taking photographs is likely to get someone stopped
+                by security — police, customs, military, a hospital or a school. Remove{' '}
+                {unsafeStops.length === 1 ? 'it' : 'them'} before you publish or play this hunt.
+              </p>
+              <p className="label" style={{ color: 'var(--pink)', margin: 0, opacity: 0.85 }}>
+                {unsafeStops.map((c) => c.name).join(' · ')}
+              </p>
+            </div>
+          )}
 
           {published ? (
             <div className="card" style={{ borderColor: 'var(--lime)' }}>
