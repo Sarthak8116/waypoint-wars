@@ -417,6 +417,7 @@ export default function RacePage() {
             name: o.name,
             checkpointIndex: o.checkpointIndex,
             totalCheckpoints: o.totalCheckpoints,
+            xp: o.xp,
             connected: o.connected,
             hintsUsed: o.hintsUsed,
           }))}

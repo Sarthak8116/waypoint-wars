@@ -255,6 +255,14 @@ async function main() {
       }
       check("a rival's hint is visible to the other player", marked, await rivalPill());
 
+      /**
+       * XP is what the leaderboard ranks on, so a pill showing only "2/5" can
+       * say you are level with someone who is ahead. The unit is asserted too:
+       * a bare lime number beside "2/5" reads as a second progress figure.
+       */
+      const pillText = await rivalPill();
+      check("a rival's score is shown, with its unit", /\d+\s*XP/i.test(pillText), pillText.replace(/\n/g, ' '));
+
       const bodyHost = await host.page.locator('body').innerText();
       const advanced = /Checkpoint 2 of|You're here/i.test(bodyHost);
       check('host advanced past the first checkpoint', advanced, bodyHost.slice(0, 60).replace(/\n/g, ' | '));

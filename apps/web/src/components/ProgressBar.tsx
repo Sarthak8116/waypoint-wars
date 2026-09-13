@@ -17,6 +17,15 @@ export interface OpponentProgress {
   checkpointIndex: number;
   totalCheckpoints: number;
   /**
+   * Their score.
+   *
+   * The thing the leaderboard actually ranks on, and the last field
+   * OpponentView carried that nothing rendered. Checkpoints completed is not
+   * standing: a rival on the same checkpoint with more XP is ahead of you,
+   * and a pill showing only "2/5" said you were level when you were not.
+   */
+  xp?: number;
+  /**
    * How many hints they have taken.
    *
    * Race information, not trivia: a hint costs 45 XP, so a rival who has
@@ -116,6 +125,13 @@ export default function ProgressBar({
                   <span style={{ opacity: 0.72 }}>
                     {gone ? 'offline' : `${o.checkpointIndex}/${o.totalCheckpoints || safeTotal}`}
                   </span>
+                  {/* The unit matters. Beside "2/5", a bare lime number reads
+                      as a second progress figure rather than a score. */}
+                  {!gone && o.xp !== undefined && (
+                    <span style={{ marginLeft: 5, color: 'var(--lime)', fontWeight: 800 }}>
+                      {o.xp} XP
+                    </span>
+                  )}
                   {!gone && (o.hintsUsed ?? 0) > 0 && (
                     <span
                       style={{ marginLeft: 4 }}
