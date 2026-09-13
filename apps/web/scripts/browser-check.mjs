@@ -48,9 +48,11 @@ const IGNORABLE = [
   /Failed to load resource.*openstreetmap/i,
 ];
 
-async function openPage(browser, path, { geolocation = true } = {}) {
+async function openPage(browser, path, { geolocation = true, width = 430 } = {}) {
   const context = await browser.newContext({
-    viewport: { width: 430, height: 900 }, // phone-sized: this is a mobile app
+    // Phone-sized: this is a mobile app. Width is overridable so the overflow
+    // sweep can check narrow devices without a second helper.
+    viewport: { width, height: 900 },
     ...(geolocation
       ? {
           permissions: ['geolocation'],
@@ -102,16 +104,25 @@ async function main() {
     // A grid item defaults to min-width:auto and refuses to shrink below its
     // content; the creator overflowed by 30px that way. Invisible to every
     // other check in this repo.
-    console.log('\nhorizontal overflow @430px');
-    for (const path of ['/', '/play?demo=1', '/demo', '/lobby', '/creator']) {
-      const { page, context } = await openPage(browser, path);
-      await page.waitForTimeout(1200);
-      const o = await page.evaluate(() => ({
-        scroll: document.body.scrollWidth,
-        view: window.innerWidth,
-      }));
-      check(`${path} does not scroll sideways`, o.scroll <= o.view + 1, `${o.scroll} vs ${o.view}`);
-      await context.close();
+    // 430px is a large phone. 320px is an iPhone SE, and the narrowest width
+    // worth supporting — a layout that survives 430 can still break there, and
+    // a judge handed a phone is not going to rotate it to make the app work.
+    for (const width of [430, 360, 320]) {
+      console.log(`\nhorizontal overflow @${width}px`);
+      for (const path of ['/', '/play?demo=1', '/demo', '/lobby', '/create', '/creator']) {
+        const { page, context } = await openPage(browser, path, { width });
+        await page.waitForTimeout(1200);
+        const o = await page.evaluate(() => ({
+          scroll: document.body.scrollWidth,
+          view: window.innerWidth,
+        }));
+        check(
+          `${path} does not scroll sideways @${width}`,
+          o.scroll <= o.view + 1,
+          `${o.scroll} vs ${o.view}`,
+        );
+        await context.close();
+      }
     }
 
     // --- home ------------------------------------------------------------
