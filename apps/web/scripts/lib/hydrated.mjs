@@ -49,3 +49,50 @@ export async function clickAndExpect(page, clickSelector, expectSelector, timeou
 export function isHeadlessGlNoise(text) {
   return /Framebuffer status|WebGL context was lost|GL Driver Message/i.test(String(text));
 }
+
+/**
+ * Interactive elements a screen reader cannot name.
+ *
+ * Found by accident: the replay's transport controls were "❚❚" and "↺" with
+ * no accessible name, which made them unreadable AND untestable — there was
+ * no way to target one from outside, so a broken control could not have been
+ * noticed. The two problems have one fix, which is why this is worth
+ * asserting rather than filing away.
+ *
+ * A placeholder counts as a name here. It is not ideal, but it is announced,
+ * and holding an internal tool to a stricter bar than that would produce
+ * noise rather than fixes.
+ */
+export async function unnamedControls(page) {
+  return page.evaluate(() => {
+    const symbolsOnly = (t) => !t || !/[a-z0-9]/i.test(t);
+    const out = [];
+
+    for (const el of document.querySelectorAll('button, a[href], input, select, textarea')) {
+      const style = getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') continue;
+
+      const tag = el.tagName.toLowerCase();
+      const named =
+        el.getAttribute('aria-label') ||
+        el.getAttribute('aria-labelledby') ||
+        (el.id && document.querySelector(`label[for="${el.id}"]`)) ||
+        el.closest('label') ||
+        el.getAttribute('placeholder') ||
+        el.getAttribute('title');
+
+      if (tag === 'input' || tag === 'select' || tag === 'textarea') {
+        if (!named) out.push(`${tag}[${el.getAttribute('type') ?? 'text'}] value="${String(el.value ?? '').slice(0, 16)}"`);
+        continue;
+      }
+      if (!named && symbolsOnly((el.textContent || '').trim())) {
+        out.push(`${tag} "${(el.textContent || '').trim().slice(0, 12)}"`);
+      }
+    }
+
+    for (const img of document.querySelectorAll('img')) {
+      if (!img.getAttribute('alt')) out.push(`img src="${(img.getAttribute('src') ?? '').slice(0, 24)}"`);
+    }
+    return out;
+  });
+}

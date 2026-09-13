@@ -17,6 +17,7 @@
  */
 
 import { chromium } from 'playwright';
+import { unnamedControls } from './lib/hydrated.mjs';
 import { mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -123,6 +124,16 @@ async function main() {
         );
         await context.close();
       }
+    }
+
+    // --- every control has a name a screen reader can read ---------------
+    console.log('\naccessible names');
+    for (const path of ['/', '/lobby', '/create', '/demo', '/play?demo=1', '/creator']) {
+      const { page, context } = await openPage(browser, path);
+      await page.waitForTimeout(2200);
+      const unnamed = await unnamedControls(page);
+      check(`${path} names every control`, unnamed.length === 0, unnamed.slice(0, 3).join(' | '));
+      await context.close();
     }
 
     // --- home ------------------------------------------------------------

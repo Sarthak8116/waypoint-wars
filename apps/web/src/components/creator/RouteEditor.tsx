@@ -77,12 +77,22 @@ function HuntMetaFields({ draft, onChange }: { draft: CreatorDraft; onChange: (p
           onChange={(e) => onChange({ city: e.target.value })}
           style={{ ...small, flex: '1 1 100px' }}
         />
-        <select value={draft.hunt.theme} onChange={(e) => onChange({ theme: e.target.value as HuntMeta['theme'] })} style={{ ...small, flex: '1 1 120px' }}>
+        <select
+          aria-label="Hunt theme"
+          value={draft.hunt.theme}
+          onChange={(e) => onChange({ theme: e.target.value as HuntMeta['theme'] })}
+          style={{ ...small, flex: '1 1 120px' }}
+        >
           {HUNT_THEMES.map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
-        <select value={draft.hunt.duration} onChange={(e) => onChange({ duration: e.target.value as HuntMeta['duration'] })} style={{ ...small, flex: '1 1 120px' }}>
+        <select
+          aria-label="Hunt duration"
+          value={draft.hunt.duration}
+          onChange={(e) => onChange({ duration: e.target.value as HuntMeta['duration'] })}
+          style={{ ...small, flex: '1 1 120px' }}
+        >
           {HUNT_DURATIONS.map((d) => (
             <option key={d} value={d}>{d}</option>
           ))}
@@ -99,6 +109,7 @@ function FinishPicker({ draft, onSet }: { draft: CreatorDraft; onSet: (id: strin
         ★ Shared final destination
       </p>
       <select
+        aria-label="Final destination — the stop every route ends at"
         value={draft.finalDestinationId ?? ''}
         onChange={(e) => onSet(e.target.value || null)}
         style={small}
@@ -218,6 +229,7 @@ export default function RouteEditor(props: RouteEditorProps) {
           >
             <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
               <input
+                aria-label="Route name"
                 value={route.label}
                 onChange={(e) => props.onRenameRoute(route.id, e.target.value)}
                 style={{ ...small, fontWeight: 700 }}
@@ -308,6 +320,7 @@ export default function RouteEditor(props: RouteEditorProps) {
 
             {available.length > 0 && (
               <select
+                aria-label={`Add a checkpoint to ${route.label}`}
                 value=""
                 onChange={(e) => e.target.value && props.onAssign(route.id, e.target.value)}
                 style={{ ...small, marginTop: 6 }}

@@ -373,7 +373,12 @@ export default function CheckpointForm(props: CheckpointFormProps) {
 
       <Section title="Layer 2 — the challenge" caption="Prove you're there. Verified server-side against the photo.">
         <Field label="Challenge kind">
-          <select value={cp.challengeKind} onChange={(e) => set({ challengeKind: e.target.value as Checkpoint['challengeKind'] })} style={inputStyle}>
+          <select
+            aria-label="Challenge kind"
+            value={cp.challengeKind}
+            onChange={(e) => set({ challengeKind: e.target.value as Checkpoint['challengeKind'] })}
+            style={inputStyle}
+          >
             {CHALLENGE_KINDS.map((k) => (
               <option key={k} value={k}>
                 {k}
