@@ -418,6 +418,7 @@ export default function RacePage() {
             checkpointIndex: o.checkpointIndex,
             totalCheckpoints: o.totalCheckpoints,
             connected: o.connected,
+            hintsUsed: o.hintsUsed,
           }))}
           notice={location.source === 'demo' ? '▶ Demo Mode' : undefined}
         />

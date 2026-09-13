@@ -229,6 +229,32 @@ async function main() {
       }
       check('an opponent region reaches the map', Number(regions) > 0, `${regions} region(s)`);
 
+      /**
+       * A rival who took a hint is 45 XP down at the same checkpoint, which is
+       * race information rather than trivia. The server has always tracked
+       * hintsUsed and OpponentView has always carried it; the marker was lost
+       * when the opponent strip was replaced by ProgressBar.
+       *
+       * Read from the pill ELEMENT, not from page text: the pill wraps across
+       * lines, and a regex that stops at a newline reports no marker on a
+       * build that has one. That mistake has now been made three times.
+       */
+      const rivalPill = () =>
+        guest.page
+          .locator('.pill')
+          .filter({ hasText: /ada/i })
+          .first()
+          .innerText()
+          .catch(() => '');
+
+      await host.page.locator('button:has-text("Need a hint")').first().click().catch(() => {});
+      let marked = false;
+      for (let i = 0; i < 5 && !marked; i++) {
+        await guest.page.waitForTimeout(4000);
+        marked = /💡/.test(await rivalPill());
+      }
+      check("a rival's hint is visible to the other player", marked, await rivalPill());
+
       const bodyHost = await host.page.locator('body').innerText();
       const advanced = /Checkpoint 2 of|You're here/i.test(bodyHost);
       check('host advanced past the first checkpoint', advanced, bodyHost.slice(0, 60).replace(/\n/g, ' | '));

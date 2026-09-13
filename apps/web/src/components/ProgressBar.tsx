@@ -17,6 +17,15 @@ export interface OpponentProgress {
   checkpointIndex: number;
   totalCheckpoints: number;
   /**
+   * How many hints they have taken.
+   *
+   * Race information, not trivia: a hint costs 45 XP, so a rival who has
+   * taken two is 90 down on you at the same checkpoint. The old opponent
+   * strip showed this as a 💡 and I dropped it when replacing that strip
+   * with this component — a regression of my own making.
+   */
+  hintsUsed?: number;
+  /**
    * False while they are inside their reconnection window.
    *
    * The server has always tracked this and the client has always carried it,
@@ -107,6 +116,16 @@ export default function ProgressBar({
                   <span style={{ opacity: 0.72 }}>
                     {gone ? 'offline' : `${o.checkpointIndex}/${o.totalCheckpoints || safeTotal}`}
                   </span>
+                  {!gone && (o.hintsUsed ?? 0) > 0 && (
+                    <span
+                      style={{ marginLeft: 4 }}
+                      title={`${o.name} has taken ${o.hintsUsed} hint${
+                        o.hintsUsed === 1 ? '' : 's'
+                      }`}
+                    >
+                      💡{o.hintsUsed! > 1 ? o.hintsUsed : ''}
+                    </span>
+                  )}
                 </span>
               );
             })}
