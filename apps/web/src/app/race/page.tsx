@@ -495,9 +495,15 @@ export default function RacePage() {
     const reveal = view.lastReveal;
     return (
       <main className="wrap stack">
-        <div className={view.lastDegraded ? 'hero hero-cyan' : 'hero hero-lime'}>
+        <div
+          className={view.lastDegraded || view.lastMocked ? 'hero hero-cyan' : 'hero hero-lime'}
+        >
           <p className="label" style={{ marginBottom: 6 }}>
-            {view.lastDegraded ? 'Answer accepted · photo NOT verified' : 'Verified'}
+            {view.lastDegraded
+              ? 'Answer accepted · photo NOT verified'
+              : view.lastMocked
+                ? 'Answer accepted · photo check was simulated'
+                : 'Verified'}
           </p>
           <p className="display" style={{ fontSize: 52 }}>
             +{view.lastAward ?? 0} XP

@@ -159,6 +159,17 @@ async function main() {
         const body = await page.locator('body').innerText();
         const hasHistory = body.length > 400;
         check('the historical reveal is shown after approval', heroXp > 0 && hasHistory);
+
+        /**
+         * This suite only runs against a server with no GEMINI_API_KEY, so
+         * every verdict here comes from the labelled mock. A mock that
+         * approves a photo it never looked at must not be reported as
+         * "Verified" — that is the silent degradation this project's rules
+         * exist to prevent, and it was doing exactly that under a lime hero.
+         */
+        const claimsVerified = /(^|\n)\s*VERIFIED\s*(\n|$)/i.test(body);
+        check('a simulated check is not called verification', !claimsVerified);
+        check('and says what it actually was', /simulated|not verified/i.test(body));
         await page.screenshot({ path: resolve(SHOT_DIR, '6-solo-reveal.png') });
       }
 

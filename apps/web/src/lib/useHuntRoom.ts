@@ -134,6 +134,14 @@ export interface RoomView {
   lastBreakdown: XpBreakdown | null;
   /** True when the photo could not be judged — never dressed up as verified. */
   lastDegraded: boolean;
+  /**
+   * True when the verdict came from the labelled mock rather than a model.
+   *
+   * Distinct from degraded: the verifier answered, it just was not looking at
+   * the photo. That is what runs with no GEMINI_API_KEY, and it was being
+   * presented as "Verified".
+   */
+  lastMocked: boolean;
   error: string | null;
 }
 
@@ -156,6 +164,7 @@ const initialView: RoomView = {
   lastAward: null,
   lastBreakdown: null,
   lastDegraded: false,
+  lastMocked: false,
   error: null,
 };
 
@@ -192,6 +201,7 @@ export function useHuntRoom() {
                   lastAward: msg.verdict.xpDelta,
                   lastBreakdown: msg.verdict.xpBreakdown,
                   lastDegraded: msg.verdict.verification?.landmarkMatch === false,
+                  lastMocked: msg.verdict.verification?.mocked === true,
                 }
               : {}),
           };

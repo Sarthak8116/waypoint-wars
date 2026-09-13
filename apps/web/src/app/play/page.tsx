@@ -560,14 +560,34 @@ function SoloPanel(props: {
   if (lastOutcome?.outcome === 'approved' && lastOutcome.reveal) {
     return (
       <div className="sheet sheet-light">
-        <div className={lastOutcome.degraded ? 'hero hero-cyan' : 'hero hero-lime'}>
-          <p className="label" style={{ marginBottom: 6 }}>
-            {lastOutcome.degraded ? 'Answer accepted · photo not verified' : 'Verified'}
-          </p>
-          <p className="display" style={{ fontSize: 44 }}>
-            +{lastOutcome.xpAwarded} XP
-          </p>
-        </div>
+        {/**
+          * Three states, not two.
+          *
+          * `degraded` means the verifier could not be reached. `mocked` means
+          * it answered, but it was the labelled stand-in rather than a model —
+          * which is what runs whenever GEMINI_API_KEY is unset, including the
+          * configuration this demo is given. Both were being rendered as
+          * "Verified" under a lime hero, which claims a photo was checked by
+          * something that never looked at it.
+          */}
+        {(() => {
+          const simulated = lastOutcome.verification?.mocked === true;
+          const unchecked = Boolean(lastOutcome.degraded) || simulated;
+          return (
+            <div className={unchecked ? 'hero hero-cyan' : 'hero hero-lime'}>
+              <p className="label" style={{ marginBottom: 6 }}>
+                {lastOutcome.degraded
+                  ? 'Answer accepted · photo not verified'
+                  : simulated
+                    ? 'Answer accepted · photo check was simulated'
+                    : 'Verified'}
+              </p>
+              <p className="display" style={{ fontSize: 44 }}>
+                +{lastOutcome.xpAwarded} XP
+              </p>
+            </div>
+          );
+        })()}
 
         <h3 style={{ color: 'var(--ink)', marginBottom: 10 }}>{lastOutcome.reveal.name}</h3>
         <p style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--ink-body)' }}>
