@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { haversineMeters, NO_PHOTO_SENTINEL, type LatLng, type LocationSample } from '@ww/shared';
+import { HINT_TRUE_COST_XP, haversineMeters, NO_PHOTO_SENTINEL, type LatLng, type LocationSample } from '@ww/shared';
 import { GameBridge, type GameHandle } from '@ww/game';
 import { useRoom } from '@/lib/RoomProvider';
 import { useLocation } from '@/lib/useLocation';
@@ -511,7 +511,7 @@ export default function RacePage() {
                 onClick={() => view.checkpoint && requestHint(view.checkpoint.id)}
                 disabled={submitting}
               >
-                Need a hint? (−20 XP)
+                Need a hint? (−{HINT_TRUE_COST_XP} XP)
               </button>
             )}
           </>
@@ -553,7 +553,7 @@ export default function RacePage() {
               style={{ marginTop: 10 }}
               onClick={() => view.checkpoint && requestHint(view.checkpoint.id)}
             >
-              Need a hint? (−20 XP)
+              Need a hint? (−{HINT_TRUE_COST_XP} XP)
             </button>
           </>
         )}

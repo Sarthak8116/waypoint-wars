@@ -1,3 +1,4 @@
+import { HINT_TRUE_COST_XP } from '@ww/shared';
 /**
  * Standalone mock harness for the HUD.
  *
@@ -40,7 +41,7 @@ function mount(): void {
     bridge,
     totalCheckpoints: state.total,
     selfPlayerId: 'p1',
-    hintCostLabel: '-20 XP',
+    hintCostLabel: `-${HINT_TRUE_COST_XP} XP`,
     onHintRequested: () => {
       note('onHintRequested -> the app would ask the server what a hint costs');
       bridge.emit(EVENT_CATALOG.HINT_USED.make(state));

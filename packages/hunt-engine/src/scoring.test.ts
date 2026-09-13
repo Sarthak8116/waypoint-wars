@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { XP_RULES } from '@ww/shared';
+import { HINT_TRUE_COST_XP, XP_RULES } from '@ww/shared';
 import {
   MIN_PLAUSIBLE_SECONDS,
   scoreCheckpoint,
@@ -176,5 +176,36 @@ describe('scoreRun — the zero floor', () => {
 
   it('returns a zeroed breakdown for an empty run', () => {
     expect(scoreRun([]).total).toBe(0);
+  });
+
+  /**
+   * The number on the hint button must be the number the player loses.
+   *
+   * It was not. Every hint button read "-20 XP" — HINT_PENALTY — while taking
+   * a hint also forfeits the +25 no-hint bonus. Measured in the live app on
+   * one checkpoint: 225 XP without a hint, 180 with one. The player was told
+   * 20 and charged 45.
+   *
+   * This asserts the advertised cost against the engine rather than against a
+   * constant, so changing either XP rule without updating the other fails
+   * here instead of in front of a player.
+   */
+  it('HINT_TRUE_COST_XP is what taking a hint actually costs', () => {
+    const base = {
+      baseXp: 100,
+      expectedCompletionSeconds: 600,
+      actualSeconds: 600,
+      completed: true,
+      answerCorrect: true,
+      incorrectAttempts: 0,
+      isFinalCheckpoint: false,
+    } as const;
+
+    const without = scoreCheckpoint({ ...base, hintUsed: false });
+    const withHint = scoreCheckpoint({ ...base, hintUsed: true });
+
+    expect(without.total - withHint.total).toBe(HINT_TRUE_COST_XP);
+    // And it is genuinely more than the penalty alone, which is the trap.
+    expect(HINT_TRUE_COST_XP).toBeGreaterThan(Math.abs(XP_RULES.HINT_PENALTY));
   });
 });

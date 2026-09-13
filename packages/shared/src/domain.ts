@@ -319,6 +319,20 @@ export const XP_RULES = {
   ROUTE_COMPLETION_BONUS: 150,
 } as const;
 
+/**
+ * What a hint ACTUALLY costs a player, in XP.
+ *
+ * Not HINT_PENALTY. Taking a hint does two things: it applies the -20
+ * penalty AND forfeits the +25 no-hint bonus, so the swing is 45. Every
+ * hint button in the app said "-20 XP" and then took 45 — measured live,
+ * 225 XP without a hint and 180 with one on the same checkpoint.
+ *
+ * Derived rather than written down, so it cannot drift from the rules it
+ * describes. scoring.test.ts asserts it against what scoreCheckpoint
+ * actually deducts.
+ */
+export const HINT_TRUE_COST_XP = XP_RULES.NO_HINT_BONUS - XP_RULES.HINT_PENALTY;
+
 // ---------------------------------------------------------------------------
 // Results
 // ---------------------------------------------------------------------------

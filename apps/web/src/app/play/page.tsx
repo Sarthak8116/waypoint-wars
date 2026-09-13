@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { haversineMeters, type Checkpoint, type LatLng, type LocationSample } from '@ww/shared';
+import { HINT_TRUE_COST_XP, haversineMeters, type Checkpoint, type LatLng, type LocationSample } from '@ww/shared';
 import { GameBridge, type GameHandle } from '@ww/game';
 import {
   CREATOR_PREVIEW_KEY,
@@ -695,7 +695,7 @@ function SoloPanel(props: {
             onClick={hintText ? hunt.requestDeeperHint : hunt.requestHint}
             disabled={verifying || (hintText !== null && !activeCheckpoint.hints?.[1])}
           >
-            Need a hint? (−20 XP)
+            Need a hint? (−{HINT_TRUE_COST_XP} XP)
           </button>
         )}
       </div>
@@ -747,7 +747,7 @@ function SoloPanel(props: {
         style={{ marginTop: 10 }}
         onClick={hintText ? hunt.requestDeeperHint : hunt.requestHint}
       >
-        Need a hint? (−20 XP)
+        Need a hint? (−{HINT_TRUE_COST_XP} XP)
       </button>
     </div>
   );

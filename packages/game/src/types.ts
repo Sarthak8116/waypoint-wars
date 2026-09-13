@@ -49,7 +49,13 @@ export interface MountOptions {
   onReplayRequested?: () => void;
   /** Fired when the player closes the results panel. */
   onResultsDismissed?: () => void;
-  /** Label under the hint button, e.g. "-20 XP". Supplied, never computed here. */
+  /**
+   * Label under the hint button, e.g. "-45 XP". Supplied, never computed here.
+   *
+   * Use HINT_TRUE_COST_XP from @ww/shared: a hint applies the -20 penalty AND
+   * forfeits the +25 no-hint bonus, so a label reading "-20" understates what
+   * the player is about to lose by more than half.
+   */
   hintCostLabel?: string;
   /** Hide the hint button entirely (room setting `hintsEnabled: false`). */
   hintsEnabled?: boolean;
