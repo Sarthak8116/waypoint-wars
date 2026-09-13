@@ -17,7 +17,7 @@ import { boot, type ColyseusTestServer } from '@colyseus/testing';
 import { Server as ColyseusServer } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import type { Room as ClientRoom } from 'colyseus.js';
-import {
+import { HINT_TRUE_COST_XP,
   XP_RULES,
   haversineMeters,
   type Checkpoint,
@@ -555,7 +555,14 @@ describe('hints', () => {
     const firstMessage = await first;
 
     expect(firstMessage.hint).toBe(active.hint);
-    expect(firstMessage.xpDelta).toBe(XP_RULES.HINT_PENALTY);
+    /**
+     * The TRUE cost, not HINT_PENALTY. A hint applies the -20 penalty AND
+     * forfeits the +25 no-hint bonus. This message is the number a client is
+     * most likely to trust, because it came from the server — it said -20
+     * while the run lost 45.
+     */
+    expect(firstMessage.xpDelta).toBe(-HINT_TRUE_COST_XP);
+    expect(Math.abs(firstMessage.xpDelta)).toBeGreaterThan(Math.abs(XP_RULES.HINT_PENALTY));
 
     for (let i = 0; i < 4; i++) {
       const repeat = h.host.waitForMessage('hint_issued');

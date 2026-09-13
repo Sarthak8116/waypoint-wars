@@ -46,7 +46,7 @@ import {
   transition,
   type HuntState,
 } from '@ww/hunt-engine';
-import {
+import { HINT_TRUE_COST_XP,
   XP_RULES,
   isWithinRadius,
   toApproximateRegion,
@@ -657,7 +657,17 @@ export class HuntRoom extends Room<HuntRoomState> {
       type: 'hint_issued',
       checkpointId: guard.checkpointId,
       hint: checkpoint.hint,
-      xpDelta: XP_RULES.HINT_PENALTY,
+      /**
+       * The TRUE cost, not HINT_PENALTY.
+       *
+       * Taking a hint applies the -20 penalty and forfeits the +25 no-hint
+       * bonus, so the player is 45 XP worse off. The UI labels were corrected
+       * for this; this message was not, and it is the number a client is most
+       * likely to trust — it comes from the server, so it looks authoritative.
+       * Anything rendering it would have understated the cost by more than
+       * half, which is the bug this project keeps finding in new places.
+       */
+      xpDelta: -HINT_TRUE_COST_XP,
     });
     this.publishLeaderboard();
   }
