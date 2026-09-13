@@ -121,6 +121,21 @@ function SoloHunt({
   demo: boolean;
 }) {
   const checkpoints = useMemo(() => routeCheckpoints(bundle, routeId), [bundle, routeId]);
+
+  /**
+   * Does this route still contain unwritten clues?
+   *
+   * A generated hunt whose model calls failed comes back with clues like
+   * "[DRAFT] Find Cathedral of the Immaculate Conception" — which not only
+   * reads as unfinished but NAMES the landmark, destroying the one thing a
+   * clue is for. /create warns about this before publishing; a player who
+   * generated a hunt from the solo gate and walked straight into it was told
+   * nothing at all.
+   */
+  const hasDraftClues = useMemo(
+    () => checkpoints.some((c) => c.clue.includes('[DRAFT]')),
+    [checkpoints],
+  );
   const route = bundle.routes.find((r) => r.id === routeId);
 
   const hunt = useSoloHunt(routeId, checkpoints);
@@ -316,9 +331,11 @@ function SoloHunt({
         notice={
           bundle.isFallback
             ? { text: '⚠ Placeholder content', tone: 'warn' as const }
-            : location.source === 'demo'
-              ? { text: '▶ Demo Mode', tone: 'info' as const }
-              : null
+            : hasDraftClues
+              ? { text: '⚠ Unwritten clues — they name the place', tone: 'warn' as const }
+              : location.source === 'demo'
+                ? { text: '▶ Demo Mode', tone: 'info' as const }
+                : null
         }
       />
     </div>

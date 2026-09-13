@@ -20,6 +20,15 @@ import BackButton from '@/components/BackButton';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:2567';
 
+/**
+ * How long to wait for a hunt before admitting it is not coming.
+ *
+ * Generous — a cold server plus a slow Overpass legitimately reaches a minute
+ * — but finite. Anything unbounded eventually becomes a person staring at a
+ * spinner with no idea whether to keep waiting.
+ */
+const GENERATE_TIMEOUT_MS = 90_000;
+
 interface NearbyHunt {
   huntId: string;
   title: string;
@@ -77,11 +86,25 @@ export default function LocationGate({ onReady }: { onReady: (b: HuntBundle) => 
       setPhase('generating');
       setStage(`finding landmarks near ${label}`);
       const t = setTimeout(() => setStage('writing a clue for each one'), 5000);
+
+      /**
+       * Generation must not be able to hang forever.
+       *
+       * It usually takes 3-40 seconds, but it depends on OpenStreetMap's
+       * Overpass — volunteer-run, and it throttles. Observed: a request that
+       * normally answers in 13s sat unanswered past 64 seconds while the page
+       * showed "takes 15-40 seconds" with no way out. An indefinite spinner is
+       * the worst thing to put in front of someone, and this one was lying
+       * about its own duration while it did it.
+       */
+      const abort = new AbortController();
+      const bail = setTimeout(() => abort.abort(), GENERATE_TIMEOUT_MS);
       try {
         const res = await fetch(`${API_URL}/api/hunts/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ duration: 'quick-detour', routeCount: 3, stopsPerRoute: 3, ...body }),
+          signal: abort.signal,
         });
         const data = (await res.json()) as {
           hunt?: Hunt;
@@ -95,10 +118,19 @@ export default function LocationGate({ onReady }: { onReady: (b: HuntBundle) => 
         if (!bundle) throw new Error('The generated hunt was incomplete.');
         onReady(bundle);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not build a hunt there.');
+        setError(
+          abort.signal.aborted
+            ? `Building a hunt near ${label} took longer than ${Math.round(
+                GENERATE_TIMEOUT_MS / 1000,
+              )} seconds. That usually means OpenStreetMap is busy — it is worth trying again, or naming a different place.`
+            : err instanceof Error
+              ? err.message
+              : 'Could not build a hunt there.',
+        );
         setPhase('error');
       } finally {
         clearTimeout(t);
+        clearTimeout(bail);
       }
     },
     [onReady],
@@ -220,8 +252,10 @@ export default function LocationGate({ onReady }: { onReady: (b: HuntBundle) => 
           </p>
           {phase === 'generating' && (
             <p className="dim" style={{ fontSize: 14, margin: '10px 0 0' }}>
-              Building a hunt takes 15–40 seconds. We look up real landmarks first,
-              then write a clue for each one.
+              Usually 15–40 seconds. We look up real landmarks first, then write a
+              clue for each one. We&apos;ll give up after{' '}
+              {Math.round(GENERATE_TIMEOUT_MS / 1000)} seconds rather than leave you
+              waiting.
             </p>
           )}
         </div>

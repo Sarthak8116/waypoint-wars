@@ -27,6 +27,9 @@ import BackButton from '@/components/BackButton';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:2567';
 
+/** Never leave someone watching an unbounded progress bar. See LocationGate. */
+const GENERATE_TIMEOUT_MS = 90_000;
+
 /** Matches the generator's own warning threshold. Keep the two in step. */
 const ROUTE_SPREAD_WARNING = 0.25;
 
@@ -108,11 +111,20 @@ export default function CreatePage() {
 
     const stops = DURATIONS.find((d) => d.value === duration)?.stops ?? 3;
 
+    /**
+     * Bounded, for the same reason the solo gate is: generation depends on
+     * Overpass, which throttles, and an unbounded wait becomes someone staring
+     * at a progress bar that promised 15-40 seconds a minute ago.
+     */
+    const abort = new AbortController();
+    const bail = setTimeout(() => abort.abort(), GENERATE_TIMEOUT_MS);
+
     try {
       const res = await fetch(`${API_URL}/api/hunts/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: query.trim(), duration, routeCount, stopsPerRoute: stops }),
+        signal: abort.signal,
       });
 
       const data = (await res.json()) as GenerateResult & { error?: string };
@@ -121,9 +133,18 @@ export default function CreatePage() {
       setResult(data);
       setStage('done');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generation failed');
+      setError(
+        abort.signal.aborted
+          ? `That took longer than ${Math.round(
+              GENERATE_TIMEOUT_MS / 1000,
+            )} seconds. OpenStreetMap is usually the slow part and it is usually busy rather than broken — try again, or try a different place.`
+          : err instanceof Error
+            ? err.message
+            : 'Generation failed',
+      );
       setStage('');
     } finally {
+      clearTimeout(bail);
       clearTimers();
       setBusy(false);
     }
