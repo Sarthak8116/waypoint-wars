@@ -156,6 +156,16 @@ Savannah from a 51% spread to 4%. That is worth saying, and it is measured.
 > Be honest. The coordinates are desk estimates with tight radii; the demo runs
 > on simulated movement. If you *have* walked one by then, say so.
 
+**"Is that a typical score?"**
+> "No — Demo Mode walks 25x real pace, so every checkpoint earns the full
+> speed bonus. 225 XP a stop is the ceiling, not the average. On foot you'd
+> earn somewhere between 175 and 225 depending on pace."
+
+Say this before anyone asks. The scoring breakdown is 100 for the checkpoint,
+50 for the right answer, up to 50 for speed and 25 for not taking a hint; a
+hint costs 45 (the −20 penalty plus the forfeited +25 bonus) and a wrong
+answer costs 15.
+
 **"Is this real or simulated right now?"**
 > "Simulated movement, real everything else — real scoring engine, real Gemini
 > calls, real multiplayer server. The walking is what's faked, and it's labeled

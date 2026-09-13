@@ -508,7 +508,10 @@ export default function RacePage() {
               </p>
             )}
 
-            {!view.lastMessage && (
+            {/* One hint per checkpoint: the server rejects a second request
+                with HINT_ALREADY_USED, so offering the button again promises
+                a charge that never happens and a hint that never arrives. */}
+            {!view.lastMessage && !view.hint && (
               <button
                 className="btn btn-ghost btn-block"
                 style={{ marginTop: 10 }}
@@ -552,13 +555,15 @@ export default function RacePage() {
               </button>
             )}
 
-            <button
-              className="btn btn-ghost btn-block"
-              style={{ marginTop: 10 }}
-              onClick={() => view.checkpoint && requestHint(view.checkpoint.id)}
-            >
-              Need a hint? (−{HINT_TRUE_COST_XP} XP)
-            </button>
+            {!view.hint && (
+              <button
+                className="btn btn-ghost btn-block"
+                style={{ marginTop: 10 }}
+                onClick={() => view.checkpoint && requestHint(view.checkpoint.id)}
+              >
+                Need a hint? (−{HINT_TRUE_COST_XP} XP)
+              </button>
+            )}
           </>
         )}
       </div>

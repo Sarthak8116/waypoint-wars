@@ -689,6 +689,11 @@ function SoloPanel(props: {
           </p>
         )}
 
+        {/* A deeper hint costs NOTHING extra: the engine's hintUsed is a
+            boolean, so the no-hint bonus is already forfeited and the penalty
+            already applied. The button used to keep saying "−45 XP" for a
+            second press that charges zero — the same lie as understating it,
+            pointed the other way. */}
         {!rejected && (
           <button
             className="btn btn-ghost btn-block"
@@ -696,7 +701,9 @@ function SoloPanel(props: {
             onClick={hintText ? hunt.requestDeeperHint : hunt.requestHint}
             disabled={verifying || (hintText !== null && !activeCheckpoint.hints?.[1])}
           >
-            Need a hint? (−{HINT_TRUE_COST_XP} XP)
+            {hintText
+              ? 'Show a bigger hint (no extra cost)'
+              : `Need a hint? (−${HINT_TRUE_COST_XP} XP)`}
           </button>
         )}
       </div>
@@ -747,8 +754,11 @@ function SoloPanel(props: {
         className="btn btn-ghost btn-block"
         style={{ marginTop: 10 }}
         onClick={hintText ? hunt.requestDeeperHint : hunt.requestHint}
+        disabled={hintText !== null && !activeCheckpoint.hints?.[1]}
       >
-        Need a hint? (−{HINT_TRUE_COST_XP} XP)
+        {hintText
+          ? 'Show a bigger hint (no extra cost)'
+          : `Need a hint? (−${HINT_TRUE_COST_XP} XP)`}
       </button>
     </div>
   );
