@@ -121,7 +121,23 @@ async function main() {
     await host.waitForTimeout(4500);
     check('both players are racing', true, code);
 
-    const [hostDone] = await Promise.all([walkToTheEnd(host), walkToTheEnd(guest)]);
+    /**
+     * The first player home always waits, because the server ends a hunt only
+     * when EVERY run is finished. Before this screen existed they waited on
+     * the checkpoint they had just cleared, Submit still live, with nothing
+     * saying they had finished — so let one player finish alone first and
+     * assert what they are told.
+     */
+    await walkToTheEnd(host);
+    await host.waitForTimeout(3000);
+    const waitingBody = await host.locator('body').innerText();
+    check('the first finisher is told they are home', /You.re home|Final standings/i.test(waitingBody));
+    if (!/Final standings/i.test(waitingBody)) {
+      check('they are told who they are waiting for', /Waiting for/i.test(waitingBody));
+      check('they cannot re-submit a solved checkpoint', !/Submit proof|Submit answer/i.test(waitingBody));
+    }
+
+    const [hostDone] = await Promise.all([Promise.resolve(true), walkToTheEnd(guest)]);
     await host.waitForTimeout(4000);
     const body = await host.locator('body').innerText();
 

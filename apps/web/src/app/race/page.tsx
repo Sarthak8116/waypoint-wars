@@ -286,6 +286,85 @@ export default function RacePage() {
     );
   }
 
+  /**
+   * This player is done, but the room is not.
+   *
+   * The server ends a hunt only when EVERY run has finished, so the first
+   * player home always waits — which is every race, by definition. Until now
+   * they waited on the checkpoint screen they had just cleared, with the same
+   * clue still showing and the Submit button still live, able to submit the
+   * same answer over and over. Nothing told them they had finished, let alone
+   * that they were winning.
+   *
+   * Read from the leaderboard rather than from local state: it is published
+   * continuously and the server owns the question of whether a run is done.
+   */
+  const selfEntry = view.leaderboard.find((e) => e.playerId === view.selfId);
+  if (view.phase === 'running' && selfEntry?.finished) {
+    const waitingOn = view.leaderboard.filter((e) => !e.finished);
+    return (
+      <main className="wrap stack">
+        <div className="hero hero-lime">
+          <p className="label" style={{ marginBottom: 6 }}>
+            You&apos;re home
+          </p>
+          <p className="display" style={{ fontSize: 60, lineHeight: 0.9 }}>
+            {selfEntry.xp}
+          </p>
+          <p className="label" style={{ marginTop: 6, marginBottom: 0 }}>
+            XP · {selfEntry.checkpointsCompleted}/{selfEntry.totalCheckpoints} checkpoints
+          </p>
+        </div>
+
+        <div>
+          <h1 className="display" style={{ fontSize: 30 }}>
+            {waitingOn.length === 1
+              ? `Waiting for ${waitingOn[0]?.displayName ?? 'one more'}`
+              : `Waiting for ${waitingOn.length} others`}
+          </h1>
+          <p className="muted" style={{ fontSize: 16, marginTop: 8 }}>
+            The final standings appear once everyone has reached the finish.
+          </p>
+        </div>
+
+        <section className="card">
+          <p className="label dim" style={{ marginBottom: 12 }}>
+            Standing so far
+          </p>
+          {view.leaderboard.map((e, i) => (
+            <div
+              key={e.playerId}
+              style={{
+                display: 'flex',
+                gap: 10,
+                alignItems: 'center',
+                padding: '10px 0',
+                borderTop: i === 0 ? 'none' : '2px solid var(--border)',
+                opacity: e.finished ? 1 : 0.6,
+              }}
+            >
+              <span className="mono" style={{ fontWeight: 900, width: 26, color: 'var(--dim)' }}>
+                {e.rank}
+              </span>
+              <span style={{ flex: 1, fontWeight: 800 }}>
+                {e.displayName}
+                {e.playerId === view.selfId && (
+                  <span className="dim" style={{ fontWeight: 600 }}> · you</span>
+                )}
+              </span>
+              <span className="dim" style={{ fontSize: 13 }}>
+                {e.finished ? 'home' : `${e.checkpointsCompleted}/${e.totalCheckpoints}`}
+              </span>
+              <span style={{ fontWeight: 900, color: 'var(--lime)' }}>{e.xp} XP</span>
+            </div>
+          ))}
+        </section>
+
+        <BackButton label="Leave" confirm="Leave the race?" onLeave={room.leaveRoom} />
+      </main>
+    );
+  }
+
   if (view.phase === 'finished') {
     const me = view.leaderboard.find((e) => e.playerId === view.selfId);
     const ordinal = (n: number) =>
@@ -309,11 +388,19 @@ export default function RacePage() {
         )}
 
         <div>
+          {/* Only claim it if it happened. A player can drop out or run out of
+              room time, and the leaderboard carries `finished` for exactly
+              this reason — it was being ignored while the heading asserted
+              the opposite. */}
           <h1 className="display" style={{ fontSize: 34 }}>
-            Everyone made it to The Point
+            {view.leaderboard.every((e) => e.finished)
+              ? 'Everyone made it to The Point'
+              : 'The hunt is over'}
           </h1>
           <p className="muted" style={{ fontSize: 17, marginTop: 8 }}>
-            Different routes, different discoveries, same finish.
+            {view.leaderboard.every((e) => e.finished)
+              ? 'Different routes, different discoveries, same finish.'
+              : 'Different routes, different discoveries — not everyone reached the finish.'}
           </p>
         </div>
 
@@ -349,9 +436,23 @@ export default function RacePage() {
                   <span className="dim" style={{ fontWeight: 600 }}> · you</span>
                 )}
               </span>
+              {e.hintsUsed > 0 && (
+                <span
+                  className="dim"
+                  style={{ fontSize: 12 }}
+                  title={`${e.displayName} took ${e.hintsUsed} hint${e.hintsUsed === 1 ? '' : 's'}`}
+                >
+                  💡{e.hintsUsed > 1 ? e.hintsUsed : ''}
+                </span>
+              )}
               <span className="dim" style={{ fontSize: 13 }}>
                 {e.checkpointsCompleted}/{e.totalCheckpoints}
               </span>
+              {!e.finished && (
+                <span className="pill" style={{ fontSize: 10, padding: '2px 7px' }}>
+                  didn&apos;t finish
+                </span>
+              )}
               <span style={{ fontWeight: 900, color: 'var(--lime)' }}>{e.xp} XP</span>
             </div>
           ))}

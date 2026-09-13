@@ -71,7 +71,13 @@ async function openPage(browser, path, { geolocation = true, width = 430 } = {})
     }
   });
 
-  await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle', timeout: 30_000 });
+  // Same fallback as gotoReady: a tile-streaming page may never go quiet.
+  try {
+    await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle', timeout: 30_000 });
+  } catch {
+    await page.goto(`${BASE}${path}`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await page.waitForTimeout(2500);
+  }
   return { page, context, errors };
 }
 

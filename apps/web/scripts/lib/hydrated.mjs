@@ -15,7 +15,24 @@
 
 /** Navigate and wait until the page can respond to input. */
 export async function gotoReady(page, url, settleMs = 1500) {
-  await page.goto(url, { waitUntil: 'networkidle', timeout: 60_000 });
+  /**
+   * networkidle is the best signal that a page is ready for input, and it is
+   * not always reachable. Map pages stream tiles continuously, so under load —
+   * two browsers plus a local dev server on one machine — the 500ms of quiet
+   * it waits for may never arrive, and the run fails on navigation with
+   * nothing wrong with the page.
+   *
+   * That happened: check:browser timed out on /creator while other suites ran,
+   * then passed 50/50 alone moments later. A harness that reports a working
+   * product as broken is the failure mode this whole file exists to prevent,
+   * so fall back to "DOM is ready, give it a beat" rather than giving up.
+   */
+  try {
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 30_000 });
+  } catch {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await page.waitForTimeout(2500);
+  }
   await page.waitForTimeout(settleMs);
 }
 
