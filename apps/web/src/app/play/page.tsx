@@ -683,6 +683,18 @@ function SoloPanel(props: {
               <span style={{ opacity: 0.75 }}>· {XP_RULES.INCORRECT_PENALTY} XP</span>
             </p>
             <p style={{ margin: '0 0 12px', fontSize: 15 }}>{lastOutcome?.message}</p>
+            {/* An observation, not a ruling. See useSoloHunt's note. */}
+            {lastOutcome?.verification?.reason &&
+              lastOutcome.verification.reason !== lastOutcome.message && (
+                <>
+                  <p className="label dim" style={{ margin: '0 0 4px' }}>
+                    What the verifier saw
+                  </p>
+                  <p className="dim" style={{ margin: '0 0 12px', fontSize: 14 }}>
+                    {lastOutcome.verification.reason}
+                  </p>
+                </>
+              )}
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <span className="pill pill-cyan">Retake the photo above</span>
               {!hintText && (

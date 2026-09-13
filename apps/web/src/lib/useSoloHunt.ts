@@ -207,9 +207,21 @@ export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
         dispatch({ type: 'VERIFICATION_FAILED', checkpointIndex: state.activeIndex, now: Date.now() });
         setLastOutcome({
           outcome: 'rejected',
+          /**
+           * Always our words, never the model's, as the headline.
+           *
+           * This used to print `result.reason` verbatim when the answer was
+           * right and the photo was not. The model comments on the answer too,
+           * and it is sometimes wrong about it — its opinion there is advisory
+           * by design, since `matchesAcceptedAnswer` decides. Observed live:
+           * it called "rust" incorrect when rust is the accepted answer.
+           * As a headline that tells a player their correct answer was wrong.
+           * The reason still reaches the UI on `verification`, labelled as an
+           * observation.
+           */
           message: !answerCorrect
             ? "That's not what we're looking for — take another look."
-            : (result?.reason ?? 'The photo did not match the landmark or the required action.'),
+            : 'The photo did not match the landmark or the required action.',
           xpAwarded: 0,
           ...(result ? { verification: result } : {}),
           ...(degraded ? { degraded } : {}),

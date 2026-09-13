@@ -143,6 +143,19 @@ export interface RoomView {
    * server had explicitly not charged them for.
    */
   lastVerdict: 'approved' | 'rejected' | 'needs-review' | null;
+  /**
+   * What the verifier actually saw, in its own words.
+   *
+   * The canned message says a photo did not match; this says WHY — "a glass
+   * office tower, not the stone courthouse" — which is the part that tells a
+   * player what to retake. Solo has always shown it. Multiplayer received it
+   * on every verdict and dropped it, so the same failure was actionable in one
+   * mode and a shrug in the other.
+   *
+   * Displayed as an observation, never acted on: it is model output, and the
+   * outcome was decided by the server before it ever reached this client.
+   */
+  lastReason: string | null;
   /** True when the photo could not be judged — never dressed up as verified. */
   lastDegraded: boolean;
   /**
@@ -175,6 +188,7 @@ const initialView: RoomView = {
   lastAward: null,
   lastBreakdown: null,
   lastVerdict: null,
+  lastReason: null,
   lastDegraded: false,
   lastMocked: false,
   error: null,
@@ -206,6 +220,7 @@ export function useHuntRoom() {
             ...v,
             lastMessage: msg.verdict.message,
             lastVerdict: msg.verdict.outcome,
+            lastReason: msg.verdict.verification?.reason ?? null,
             // XP still comes from score_update; never trust a local sum.
             // xpDelta here is only the headline on the reward panel.
             ...(msg.verdict.outcome === 'approved' && msg.verdict.reveal

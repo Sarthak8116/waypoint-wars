@@ -699,6 +699,29 @@ export default function RacePage() {
                   )}
                 </p>
                 <p style={{ margin: '0 0 10px', fontSize: 15 }}>{view.lastMessage}</p>
+                {/**
+                  * The verifier's own words — labelled as an OBSERVATION, not
+                  * a ruling, and that distinction is load-bearing.
+                  *
+                  * The model's opinion about the written answer is advisory by
+                  * design: `matchesAcceptedAnswer` decides, precisely so a
+                  * model cannot be argued into passing someone. But the model
+                  * still comments on it, and it is sometimes wrong — observed
+                  * live, it called the answer "rust" incorrect when rust is
+                  * the accepted answer. Printed bare, that tells a player
+                  * their correct answer was wrong. Printed under "What the
+                  * verifier saw", it reads as what it is.
+                  */}
+                {view.lastReason && view.lastReason !== view.lastMessage && (
+                  <>
+                    <p className="label dim" style={{ margin: '0 0 4px' }}>
+                      What the verifier saw
+                    </p>
+                    <p className="dim" style={{ margin: '0 0 10px', fontSize: 14 }}>
+                      {view.lastReason}
+                    </p>
+                  </>
+                )}
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <span className="pill pill-cyan">Retake the photo above</span>
                   {!view.hint && (
