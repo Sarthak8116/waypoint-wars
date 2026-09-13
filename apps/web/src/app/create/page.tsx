@@ -435,6 +435,17 @@ export default function CreatePage() {
             </div>
           ) : (
             <>
+              {/* Walking it is how you review it, so this comes BEFORE publish.
+                  Publishing is deliberately a human-review gate — requiring it
+                  first meant publishing unreviewed content in order to review
+                  it. This path writes to the preview channel and touches no
+                  published content at all. */}
+              <button className="btn btn-pink btn-block" onClick={playSolo}>
+                Play it now, solo
+              </button>
+              <p className="dim" style={{ fontSize: 13, textAlign: 'center', margin: '8px 0 14px' }}>
+                Walk it yourself before anyone else sees it. Nothing is published.
+              </p>
               <button
                 className="btn btn-lime btn-block"
                 onClick={() => void publish()}

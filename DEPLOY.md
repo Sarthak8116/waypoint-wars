@@ -4,16 +4,46 @@
 
 | | |
 | --- | --- |
-| Web app | https://waypoint-wars-2c9bimqa9-waypoint-wars.vercel.app |
+| Web app | https://waypoint-wars-6k98bgh01-waypoint-wars.vercel.app |
 | Room server | https://waypoint-server-production-a3be.up.railway.app |
 | Repo | https://github.com/Sarthak8116/waypoint-wars |
 
-Verified against the live hosts: `check:browser` 22/22 and
-`check:multiplayer` 17/17 — two browsers playing each other over the public
-internet, `wss://` connecting, different routes, server-issued instructions.
+Verified against the live hosts:
+
+| Suite | | What it proves |
+| --- | --- | --- |
+| `check:browser` | 37/37 | every page renders; no sideways scroll at 430 / 360 / 320px |
+| `check:multiplayer` | 17/17 | two browsers, different routes, server-issued instructions over `wss://` |
+| `check:teams` | 7/7 | teammates share one route, a rival team gets another |
+| `check:reconnect` | 5/5 | a reload returns to the same seat; leaving means leaving |
+| `check:creator` | 14/14 | the editor writes a draft and `/play` walks it |
+
+`check:solo` exits **2 by design** when `GEMINI_API_KEY` is live: a blank test
+photo cannot pass real verification, and the script refuses to assert something
+false. Run it against a server started with `GEMINI_API_KEY=`.
+
+## ⚠ The server is behind the repo
+
+Everything below is deployed. The **room server is not**: it has not been
+redeployed since the "any city" work landed, so production is missing
+
+- the fallback model (Gemini's free tier meters per model; the primary is
+  quota-exhausted, so generated hunts come back full of `[DRAFT]` placeholders)
+- `isUnsuitable()` (a Savannah hunt currently finishes at a **U.S. Customs and
+  Border Protection** facility)
+- `pickGatheringPoint()` (generated hunts start at "Savannah" rather than
+  Chippewa Square)
+- the route balancer fix (routes differ by 41% instead of 4%)
+- photoless Demo Mode submissions for multiplayer
+- `GET /api/hunts/nearby`, which 404s
 
 ```bash
-WEB_URL=https://waypoint-wars-2c9bimqa9-waypoint-wars.vercel.app \
+railway variables --set ALLOW_PHOTOLESS_SUBMISSIONS=true
+railway up --service waypoint-server --detach
+```
+
+```bash
+WEB_URL=https://waypoint-wars-6k98bgh01-waypoint-wars.vercel.app \
 API_URL=https://waypoint-server-production-a3be.up.railway.app \
   pnpm check:browser
 ```

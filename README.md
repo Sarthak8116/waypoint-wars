@@ -114,11 +114,23 @@ pnpm --filter @ww/multiplayer-server e2e:publish    # creator publish -> playabl
 pnpm --filter @ww/multiplayer-server check:gemini   # real API round-trip
 
 # real headless Chromium — these found the bugs unit tests could not
-pnpm check:browser        # rendering, canvases, no sideways scroll
+pnpm check:browser        # rendering, canvases, no sideways scroll @ 430/360/320
 pnpm check:solo           # a complete solo hunt, photo and all
 pnpm check:multiplayer    # TWO browsers playing each other
+pnpm check:teams          # teammates share a route, rivals do not
+pnpm check:reconnect      # a reload returns to the same seat
 pnpm check:creator        # map editing + the preview round-trip
 ```
+
+`check:teams` and `check:reconnect` exist because both features were reachable
+from the UI and did nothing. Teams mode never sent a team name, so every
+"team" had one member; a page reload dropped the player while the server was
+still holding their seat. The server was correct and unit-tested in both
+cases — only a browser could tell.
+
+Each asserts BOTH directions, which is the part that matters: teammates must
+match *and* rivals must differ; a reload must restore *and* a deliberate exit
+must not.
 
 Screenshots land in `.screenshots/`. Looking at them caught three layout bugs
 no assertion did.
