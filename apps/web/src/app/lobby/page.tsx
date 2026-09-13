@@ -15,10 +15,12 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { GameMode } from '@ww/shared';
 import { useRoom } from '@/lib/RoomProvider';
-import { loadHuntBundle, type HuntBundle } from '@/lib/huntData';
+import { loadHuntBundle, normalizeBundle, type HuntBundle } from '@/lib/huntData';
 import BackButton from '@/components/BackButton';
 
-const HUNT_ID = 'hunt_three_rivers_run';
+/** The seeded hunt, used when the lobby is opened without one. */
+const DEFAULT_HUNT_ID = 'hunt_three_rivers_run';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:2567';
 
 export default function LobbyPage() {
   return (
@@ -53,6 +55,16 @@ function Lobby() {
   const [team, setTeam] = useState('');
   const [qr, setQr] = useState<string | null>(null);
   const [bundle, setBundle] = useState<HuntBundle | null>(null);
+
+  /**
+   * Which hunt this room will run.
+   *
+   * /create links here with ?hunt=<id> after publishing. Without this the
+   * lobby always hosted the seeded Pittsburgh hunt, so building a hunt for
+   * another city and pressing "Open the lobby" silently started a Pittsburgh
+   * game — the one thing "create a hunt anywhere" must not do.
+   */
+  const huntId = params.get('hunt') ?? DEFAULT_HUNT_ID;
   const [copied, setCopied] = useState(false);
 
   /**
@@ -68,8 +80,23 @@ function Lobby() {
   busyRef.current = busy;
 
   useEffect(() => {
-    void loadHuntBundle().then(setBundle);
-  }, []);
+    let cancelled = false;
+    if (huntId === DEFAULT_HUNT_ID) {
+      void loadHuntBundle().then((b) => !cancelled && setBundle(b));
+    } else {
+      // A custom hunt lives on the server, not in the bundled content.
+      void fetch(`${API_URL}/api/hunt?huntId=${encodeURIComponent(huntId)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((raw) => {
+          if (cancelled) return;
+          setBundle(raw ? normalizeBundle(raw) : null);
+        })
+        .catch(() => undefined);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [huntId]);
 
   // Clear the guard once the server has answered either way.
   useEffect(() => {
@@ -106,10 +133,10 @@ function Lobby() {
     void room.createRoom(
       name.trim() || 'Host',
       mode,
-      HUNT_ID,
+      huntId,
       mode === 'team-race' ? team.trim() || undefined : undefined,
     );
-  }, [room, name, mode, team]);
+  }, [room, name, mode, team, huntId]);
 
   const handleJoin = useCallback(() => {
     if (busyRef.current) return;
@@ -265,6 +292,12 @@ function Lobby() {
         <p className="muted" style={{ marginTop: 10, marginBottom: 0 }}>
           Everyone walks a different route. Everyone finishes in the same place.
         </p>
+        {huntId !== DEFAULT_HUNT_ID && (
+          <p className="label" style={{ color: 'var(--lime)', marginTop: 12, marginBottom: 0 }}>
+            ★ Hosting {bundle?.hunt.title ?? 'your custom hunt'}
+            {bundle?.hunt.city ? ` · ${bundle.hunt.city}` : ''}
+          </p>
+        )}
       </div>
 
       <input

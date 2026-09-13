@@ -19,6 +19,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
+import { CREATOR_PREVIEW_KEY } from '@/lib/huntData';
 import type { Checkpoint, Hunt, HuntDuration, Route } from '@ww/shared';
 import BackButton from '@/components/BackButton';
 
@@ -122,6 +123,31 @@ export default function CreatePage() {
       setBusy(false);
     }
   }, [query, duration, routeCount]);
+
+  /**
+   * Walk the generated hunt immediately, without publishing anywhere.
+   *
+   * Reuses the creator preview channel /play already honours, which is exactly
+   * what this is: content you just authored, walked before anyone else sees
+   * it. Writing it here means the hunt does not have to be published — or even
+   * reachable by id — to be playable.
+   */
+  const playSolo = useCallback(() => {
+    if (!result) return;
+    try {
+      window.localStorage.setItem(
+        CREATOR_PREVIEW_KEY,
+        JSON.stringify({
+          hunt: result.hunt,
+          routes: result.routes,
+          checkpoints: result.checkpoints,
+        }),
+      );
+    } catch {
+      // Private window. Fall through — /play will load published content.
+    }
+    window.location.href = '/play';
+  }, [result]);
 
   const publish = useCallback(async () => {
     if (!result) return;
@@ -389,9 +415,22 @@ export default function CreatePage() {
               <p className="label" style={{ color: 'var(--lime)', marginBottom: 8 }}>
                 Published
               </p>
-              <p style={{ marginBottom: 14 }}>It&apos;s live. Start a room and play it.</p>
-              <a className="btn btn-cyan btn-block" href="/lobby">
-                Open the lobby
+              <p style={{ marginBottom: 14 }}>
+                It&apos;s live. Play it on your own, or gather people into a room.
+              </p>
+              {/* Both links carry THIS hunt. "Open the lobby" on its own was a
+                  dead end: the lobby hosts a hard-coded Pittsburgh hunt, so
+                  building a hunt for another city and publishing it ended with
+                  no way to reach the thing you just made. */}
+              <button className="btn btn-pink btn-block" onClick={playSolo}>
+                Play it now, solo
+              </button>
+              <a
+                className="btn btn-cyan btn-block"
+                style={{ marginTop: 10 }}
+                href={`/lobby?hunt=${encodeURIComponent(result.hunt.id)}`}
+              >
+                Host a room with this hunt
               </a>
             </div>
           ) : (
