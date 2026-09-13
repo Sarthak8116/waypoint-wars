@@ -98,7 +98,10 @@ export default function RacePage() {
       handle = mountGame(hudRef.current, {
         bridge: bridgeRef.current,
         totalCheckpoints: view.totalCheckpoints || 5,
-        selfPlayerId: view.selfId ?? undefined,
+        // The HUD filters rows by the SERVER's player id, which is what
+        // OPPONENT_PROGRESS now carries. selfId is the scoring entity (a team
+        // in team-race) and would not match a per-player row.
+        selfPlayerId: view.selfPlayerId ?? undefined,
         onHintRequested: () => view.checkpoint && requestHint(view.checkpoint.id),
       });
     });

@@ -82,7 +82,25 @@ export interface OpponentView {
 export interface RoomView {
   phase: RoomPhase;
   code: string | null;
+  /**
+   * The SCORING entity id — a team id in team-race, a player id otherwise.
+   *
+   * Deliberately not the Colyseus sessionId. Leaderboard entries are keyed by
+   * `run.entityId`, so matching them against a sessionId never matched, and
+   * the multiplayer end screen's "You won / You finished" hero never appeared
+   * for anybody.
+   */
   selfId: string | null;
+  /**
+   * This player's server-side `player_xxxxxxxx` id.
+   *
+   * Server messages (`player_progress`, `player_region`) are keyed by this,
+   * while replicated state was being read by sessionId. The two id spaces
+   * never met: progress from your own client was mistaken for an opponent and
+   * rendered as a raw id, and no region message ever matched an opponent — so
+   * "you can see roughly where your rivals are" had never once worked.
+   */
+  selfPlayerId: string | null;
   isHost: boolean;
   checkpoint: PublicCheckpoint | null;
   checkpointIndex: number;
@@ -100,6 +118,7 @@ const initialView: RoomView = {
   phase: 'idle',
   code: null,
   selfId: null,
+  selfPlayerId: null,
   isHost: false,
   checkpoint: null,
   checkpointIndex: 0,
@@ -148,7 +167,7 @@ export function useHuntRoom() {
           return { ...v, instruction: msg.instruction };
 
         case 'score_update':
-          return msg.playerId === v.selfId
+          return msg.playerId === v.selfPlayerId
             ? { ...v, xp: msg.xp }
             : {
                 ...v,
@@ -158,31 +177,24 @@ export function useHuntRoom() {
               };
 
         case 'player_progress': {
-          if (msg.playerId === v.selfId) {
+          if (msg.playerId === v.selfPlayerId) {
             return { ...v, checkpointIndex: msg.checkpointIndex, totalCheckpoints: msg.totalCheckpoints };
           }
-          const exists = v.opponents.some((o) => o.playerId === msg.playerId);
+          /**
+           * Update only. This used to APPEND an opponent when the id was
+           * unknown, and the id was always unknown — sessionId-keyed state
+           * versus player-id-keyed messages — so every client added a phantom
+           * rival named after its own raw id, itself included. Replicated
+           * state is the complete roster; a message can refine it, never
+           * invent a row.
+           */
           return {
             ...v,
-            opponents: exists
-              ? v.opponents.map((o) =>
-                  o.playerId === msg.playerId
-                    ? { ...o, checkpointIndex: msg.checkpointIndex, totalCheckpoints: msg.totalCheckpoints }
-                    : o,
-                )
-              : [
-                  ...v.opponents,
-                  {
-                    playerId: msg.playerId,
-                    name: msg.playerId,
-                    checkpointIndex: msg.checkpointIndex,
-                    totalCheckpoints: msg.totalCheckpoints,
-                    xp: 0,
-                    region: null,
-                    connected: true,
-                    hintsUsed: 0,
-                  },
-                ],
+            opponents: v.opponents.map((o) =>
+              o.playerId === msg.playerId
+                ? { ...o, checkpointIndex: msg.checkpointIndex, totalCheckpoints: msg.totalCheckpoints }
+                : o,
+            ),
           };
         }
 
@@ -222,7 +234,8 @@ export function useHuntRoom() {
         // reading it now pinned `code` to null forever and the lobby never
         // left the create/join screen. `onStateChange` below fills it in.
         code: null,
-        selfId: room.sessionId,
+        selfId: null,
+        selfPlayerId: null,
         isHost,
         error: null,
       }));
@@ -235,9 +248,38 @@ export function useHuntRoom() {
        * message and is handled above, never from here.
        */
       room.onStateChange((state) => {
+        /**
+         * The replicated shape, as this client reads it.
+         *
+         * `id`, `teamId` and `region` were missing from this type, which is
+         * precisely why the id mismatch survived: the client could not see the
+         * fields the server keys its messages and its leaderboard by, so it
+         * used the sessionId it could see, and nothing ever matched.
+         */
         const s = state as unknown as {
           code?: string;
-          players?: Map<string, { sessionId: string; name: string; xp: number; checkpointIndex: number; totalCheckpoints: number; connected: boolean; hintsUsed: number }>;
+          players?: Map<
+            string,
+            {
+              /** Server-side `player_xxxxxxxx`. What server messages carry. */
+              id: string;
+              sessionId: string;
+              /** '' in individual-race. The scoring entity in team-race. */
+              teamId: string;
+              name: string;
+              xp: number;
+              checkpointIndex: number;
+              totalCheckpoints: number;
+              connected: boolean;
+              hintsUsed: number;
+              region?: {
+                hasRegion: boolean;
+                latitude: number;
+                longitude: number;
+                radiusMeters: number;
+              };
+            }
+          >;
         };
 
         setView((v) => {
@@ -245,26 +287,48 @@ export function useHuntRoom() {
           let xp = v.xp;
           let totalCheckpoints = v.totalCheckpoints;
 
+          let selfId = v.selfId;
+          let selfPlayerId = v.selfPlayerId;
+
           s.players?.forEach((p) => {
+            // Identity still comes from the sessionId — it is the only thing
+            // that identifies THIS connection. Everything downstream is keyed
+            // by the server's own ids from here on.
             if (p.sessionId === room.sessionId) {
               xp = p.xp ?? xp;
               totalCheckpoints = p.totalCheckpoints || totalCheckpoints;
+              selfPlayerId = p.id || selfPlayerId;
+              // Teams score as one entity, so that is what the leaderboard
+              // keys on and what "is this me?" has to compare against.
+              selfId = p.teamId || p.id || selfId;
               return;
             }
-            const existing = v.opponents.find((o) => o.playerId === p.sessionId);
+
             opponents.push({
-              playerId: p.sessionId,
+              playerId: p.id,
               name: p.name,
               checkpointIndex: p.checkpointIndex ?? 0,
               totalCheckpoints: p.totalCheckpoints ?? 0,
               xp: p.xp ?? 0,
-              region: existing?.region ?? null,
+              /**
+               * Read from replicated state, NOT from the player_region
+               * message. The message is fire-and-forget and broadcastExcept,
+               * so a late joiner or a reconnecting player would never receive
+               * one for a rival who had already stopped moving. State always
+               * carries the current region.
+               */
+              region: p.region?.hasRegion
+                ? {
+                    center: { latitude: p.region.latitude, longitude: p.region.longitude },
+                    radiusMeters: p.region.radiusMeters,
+                  }
+                : null,
               connected: p.connected ?? true,
               hintsUsed: p.hintsUsed ?? 0,
             });
           });
 
-          return { ...v, code: s.code ?? v.code, xp, totalCheckpoints, opponents };
+          return { ...v, code: s.code ?? v.code, xp, totalCheckpoints, opponents, selfId, selfPlayerId };
         });
       });
 
