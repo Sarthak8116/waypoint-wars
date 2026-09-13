@@ -55,7 +55,7 @@ function recallSession(): StoredSession | null {
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Client, type Room } from 'colyseus.js';
-import type {
+import type { XpBreakdown,
   ApproximateRegion,
   GameMode,
   LeaderboardEntry,
@@ -130,6 +130,8 @@ export interface RoomView {
   } | null;
   /** XP from that same submission, for the reward panel's headline. */
   lastAward: number | null;
+  /** The eight components behind that number. Sent with every verdict. */
+  lastBreakdown: XpBreakdown | null;
   /** True when the photo could not be judged — never dressed up as verified. */
   lastDegraded: boolean;
   error: string | null;
@@ -152,6 +154,7 @@ const initialView: RoomView = {
   lastMessage: null,
   lastReveal: null,
   lastAward: null,
+  lastBreakdown: null,
   lastDegraded: false,
   error: null,
 };
@@ -187,6 +190,7 @@ export function useHuntRoom() {
               ? {
                   lastReveal: msg.verdict.reveal,
                   lastAward: msg.verdict.xpDelta,
+                  lastBreakdown: msg.verdict.xpBreakdown,
                   lastDegraded: msg.verdict.verification?.landmarkMatch === false,
                 }
               : {}),

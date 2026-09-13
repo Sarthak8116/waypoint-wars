@@ -507,6 +507,16 @@ a {
   padding: 22px 20px;
   border-radius: var(--r-panel) var(--r-panel) 0 0;
 }
+/**
+ * A sheet scrolls, and a negative top margin on its first child puts that
+ * content above the scroll origin, where it is clipped. The reward panel's
+ * "Verified" / "photo NOT verified" label was being cut in half by this — the
+ * one line on the screen that says whether the photo was actually checked.
+ * Bleed sideways only when the hero opens a scrolling sheet.
+ */
+.sheet > .hero:first-child {
+  margin-top: 0;
+}
 
 .hero-lime {
   background: var(--lime);

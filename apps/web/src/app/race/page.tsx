@@ -21,6 +21,7 @@ import { useLocation } from '@/lib/useLocation';
 import PhotoCapture from '@/components/PhotoCapture';
 import BackButton from '@/components/BackButton';
 import ProgressBar from '@/components/ProgressBar';
+import XpBreakdown from '@/components/XpBreakdown';
 
 const HuntMap = dynamic(() => import('@/components/HuntMap'), { ssr: false });
 
@@ -540,6 +541,12 @@ export default function RacePage() {
             </p>
           )}
         </div>
+
+        {view.lastBreakdown && (
+          <div className="card-light" style={{ marginTop: -8 }}>
+            <XpBreakdown breakdown={view.lastBreakdown} />
+          </div>
+        )}
 
         <button
           className="btn btn-pink btn-block"

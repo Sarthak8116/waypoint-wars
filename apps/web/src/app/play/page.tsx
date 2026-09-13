@@ -27,6 +27,7 @@ import BackButton from '@/components/BackButton';
 import LocationGate from '@/components/LocationGate';
 import LoadingPanel from '@/components/LoadingPanel';
 import ProgressBar from '@/components/ProgressBar';
+import XpBreakdown from '@/components/XpBreakdown';
 
 // MapLibre touches `window` at module scope.
 const HuntMap = dynamic(() => import('@/components/HuntMap'), { ssr: false });
@@ -590,7 +591,9 @@ function SoloPanel(props: {
           </p>
         )}
 
-        <button className="btn btn-pink btn-block" style={{ marginTop: 8 }} onClick={props.onAdvance}>
+        {lastOutcome.breakdown && <XpBreakdown breakdown={lastOutcome.breakdown} />}
+
+        <button className="btn btn-pink btn-block" style={{ marginTop: 16 }} onClick={props.onAdvance}>
           Next clue →
         </button>
       </div>
