@@ -15,6 +15,7 @@
  */
 
 import { chromium } from 'playwright';
+import { gotoReady, isHeadlessGlNoise } from './lib/hydrated.mjs';
 import { mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,12 +41,14 @@ async function main() {
 
     const ctx = await browser.newContext({ viewport: { width: 430, height: 900 } });
     const page = await ctx.newPage();
-    page.on('pageerror', (e) => errors.push(String(e)));
+    page.on('pageerror', (e) => {
+      if (!isHeadlessGlNoise(e)) errors.push(String(e));
+    });
 
     const clueOf = async () =>
       ((await page.locator('[data-testid="clue"]').first().textContent().catch(() => '')) ?? '').trim();
 
-    await page.goto(`${BASE}/lobby`, { waitUntil: 'domcontentloaded' });
+    await gotoReady(page, `${BASE}/lobby`);
     await page.locator('input[aria-label="Your name"]').fill('Ava');
     await page.locator('button:has-text("Create room")').click();
     await page.waitForSelector('h1.mono', { timeout: 30_000 });
@@ -57,7 +60,7 @@ async function main() {
     const before = await clueOf();
     check('in a race with a clue', before.length > 0, before.slice(0, 40));
 
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.reload({ waitUntil: 'networkidle' });
     await page.waitForTimeout(7000);
     const after = await clueOf();
     const body = await page.locator('body').innerText();
@@ -71,7 +74,7 @@ async function main() {
     await page.waitForTimeout(400);
     await page.locator('button:has-text("Leave the race?")').click();
     await page.waitForTimeout(1500);
-    await page.goto(`${BASE}/race`, { waitUntil: 'domcontentloaded' });
+    await gotoReady(page, `${BASE}/race`);
     await page.waitForTimeout(5000);
     const afterLeave = await page.locator('body').innerText();
     check('a deliberate exit stays exited', /Not in a room/i.test(afterLeave));

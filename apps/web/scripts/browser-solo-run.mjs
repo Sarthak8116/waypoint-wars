@@ -14,6 +14,7 @@
  */
 
 import { chromium } from 'playwright';
+import { gotoReady } from './lib/hydrated.mjs';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -80,7 +81,8 @@ async function main() {
   });
 
   try {
-    await page.goto(`${BASE}/play`, { waitUntil: 'networkidle', timeout: 30_000 });
+    // ?demo=1 skips the location gate; gotoReady waits for hydration.
+    await gotoReady(page, `${BASE}/play?demo=1`);
     await page.waitForSelector('button:has-text("Start hunt")', { timeout: 20_000 });
 
     // Demo Mode, because that is the path the actual demo uses.
@@ -88,10 +90,13 @@ async function main() {
     await page.locator('button:has-text("Start hunt")').click();
     await page.waitForTimeout(1500);
 
-    check('hunt started', (await page.locator('text=/CLUE 1 OF/i').count()) > 0);
+    // Progress moved out of a per-sheet "CLUE 1 OF 5" label and into the
+    // always-visible strip. This suite exits 2 against a live Gemini key, so
+    // nobody had run it since the redesign and it had been stale ever since.
+    check('hunt started', (await page.locator('text=/Checkpoint 1 of/i').count()) > 0);
 
-    const totalText = (await page.locator('text=/CLUE 1 OF/i').first().textContent()) ?? '';
-    const total = Number(totalText.match(/OF\s+(\d+)/i)?.[1] ?? 0);
+    const totalText = (await page.locator('text=/Checkpoint 1 of/i').first().textContent()) ?? '';
+    const total = Number(totalText.match(/of\s+(\d+)/i)?.[1] ?? 0);
     check('a route with checkpoints was assigned', total > 0, `${total} stops`);
 
     let solved = 0;
@@ -178,8 +183,18 @@ async function main() {
     check('hunt reached the completion screen', finished);
 
     if (finished) {
-      const xpText = (await page.locator('text=/ XP$/').first().textContent()) ?? '';
-      const xp = Number(xpText.replace(/[^\d]/g, ''));
+      /**
+       * The finish hero is a bare number with "TOTAL XP" beneath it, so the
+       * old `text=/ XP$/` matched the LABEL and parsed to zero — a full,
+       * correct 1250-point run reported as 0 XP. Read the whole screen and
+       * take the number that precedes the label.
+       */
+      const finishText = await page.locator('body').innerText();
+      const xp = Number(
+        (finishText.match(/(\d[\d,]*)\s*\n?\s*total xp/i) ??
+          finishText.match(/(\d[\d,]*)\s*XP/i) ??
+          [])[1]?.replace(/,/g, '') ?? 0,
+      );
       check('final XP is greater than zero', xp > 0, `${xp} XP`);
       await page.screenshot({ path: resolve(SHOT_DIR, '7-solo-complete.png') });
     }

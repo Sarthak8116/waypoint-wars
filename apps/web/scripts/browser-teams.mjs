@@ -15,6 +15,7 @@
  */
 
 import { chromium } from 'playwright';
+import { gotoReady, clickAndExpect } from './lib/hydrated.mjs';
 import { mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,7 +45,7 @@ async function main() {
     const ctx = await browser.newContext({ viewport: { width: 430, height: 900 } });
     const page = await ctx.newPage();
     page.on('pageerror', (e) => errors.push(String(e)));
-    await page.goto(`${BASE}${path}`, { waitUntil: 'domcontentloaded' });
+    await gotoReady(page, `${BASE}${path}`);
     return page;
   }
 
@@ -53,7 +54,12 @@ async function main() {
 
     const host = await open('/lobby');
     await host.locator('input[aria-label="Your name"]').fill('Ava');
-    await host.locator('button:has-text("Teams")').click();
+    // Confirm the mode toggle actually took: the team-name field only exists
+    // in team-race, so its absence means the click was swallowed.
+    check(
+      'the Teams toggle responds',
+      await clickAndExpect(host, 'button:has-text("Teams")', 'input[aria-label="Your team name"]'),
+    );
     await host.locator('input[aria-label="Your team name"]').fill('Rivers');
     await host.locator('button:has-text("Create room")').click();
 
