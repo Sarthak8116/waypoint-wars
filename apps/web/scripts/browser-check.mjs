@@ -182,6 +182,60 @@ async function main() {
       const placeholder = await page.locator('text=/Placeholder content/i').count();
       check('serving CURATED content, not the placeholder', placeholder === 0);
 
+      /**
+       * The replay is the first thing the demo shows, and its transport
+       * controls were glyph-only and unlabelled — untestable from outside and
+       * unreadable to a screen reader. They are named now, so both problems
+       * are solved by the same change.
+       *
+       * Progress is read from the bar's own width, which is the only thing on
+       * the page that reflects the replay clock.
+       */
+      const pct = () =>
+        page.evaluate(() => {
+          const bars = [...document.querySelectorAll('div')].filter((d) =>
+            /%$/.test(d.style.width || ''),
+          );
+          return bars.length ? parseFloat(bars[bars.length - 1].style.width) : NaN;
+        });
+
+      await page.waitForTimeout(2500);
+      const p1 = await pct();
+      await page.waitForTimeout(3500);
+      const p2 = await pct();
+      check('the replay actually plays', p2 > p1, `${p1.toFixed(1)}% -> ${p2.toFixed(1)}%`);
+
+      await page.locator('button[aria-label="Pause the replay"]').click();
+      await page.waitForTimeout(600);
+      const p3 = await pct();
+      await page.waitForTimeout(3000);
+      const p4 = await pct();
+      check('pause holds it still', Math.abs(p4 - p3) < 0.5, `${p3.toFixed(1)}% -> ${p4.toFixed(1)}%`);
+
+      await page.locator('button[aria-label="Play the replay"]').click();
+      await page.waitForTimeout(2000);
+      const p5 = await pct();
+      await page.locator('button[aria-label="Restart the replay"]').click();
+      await page.waitForTimeout(800);
+      const p6 = await pct();
+      check('restart rewinds it', p6 < p5, `${p5.toFixed(1)}% -> ${p6.toFixed(1)}%`);
+
+      await page.locator('button[aria-label="Play at 4 times speed"]').click();
+      const f1 = await pct();
+      await page.waitForTimeout(3000);
+      const f2 = await pct();
+      await page.locator('button[aria-label="Play at 1 times speed"]').click();
+      const s1 = await pct();
+      await page.waitForTimeout(3000);
+      const s2 = await pct();
+      check('4x really is faster than 1x', f2 - f1 > s2 - s1, `${(f2 - f1).toFixed(1)} vs ${(s2 - s1).toFixed(1)} per 3s`);
+
+      const collapsed = await page.locator('button[aria-expanded]').getAttribute('aria-expanded');
+      await page.locator('button[aria-expanded]').click();
+      await page.waitForTimeout(800);
+      const opened = await page.locator('button[aria-expanded]').getAttribute('aria-expanded');
+      check('the discoveries panel opens', collapsed !== opened, `${collapsed} -> ${opened}`);
+
       check('no page errors', errors.length === 0, errors[0] ?? '');
       await shot(page, '2-demo-replay');
       await context.close();

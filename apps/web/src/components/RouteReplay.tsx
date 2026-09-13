@@ -534,14 +534,29 @@ export default function RouteReplay({ players, durationMs, onDone, start }: Rout
             fontSize: 13,
             padding: 0,
           }}
+          aria-expanded={expanded}
         >
           {expanded ? '▼ Hide details' : '▲ Discoveries & scores'}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <button className="btn btn-ghost" style={{ minWidth: 56, padding: 0 }} onClick={() => setPlaying((v) => !v)}>
+          {/* Glyph-only buttons need names. A screen reader otherwise
+              announces "❚❚" and "↺", and nothing outside the component can
+              tell the transport controls apart either — which is how a broken
+              control would go unnoticed. */}
+          <button
+            className="btn btn-ghost"
+            style={{ minWidth: 56, padding: 0 }}
+            onClick={() => setPlaying((v) => !v)}
+            aria-label={playing ? 'Pause the replay' : 'Play the replay'}
+          >
             {playing ? '❚❚' : '▶'}
           </button>
-          <button className="btn btn-ghost" style={{ minWidth: 56, padding: 0 }} onClick={restart}>
+          <button
+            className="btn btn-ghost"
+            style={{ minWidth: 56, padding: 0 }}
+            onClick={restart}
+            aria-label="Restart the replay"
+          >
             ↺
           </button>
           {SPEEDS.map((s) => (
@@ -550,6 +565,8 @@ export default function RouteReplay({ players, durationMs, onDone, start }: Rout
               className={`btn${speed === s ? ' btn-yellow' : ' btn-ghost'}`}
               style={{ minWidth: 56, padding: '0 12px' }}
               onClick={() => setSpeed(s)}
+              aria-label={`Play at ${s} times speed`}
+              aria-pressed={speed === s}
             >
               {s}×
             </button>
