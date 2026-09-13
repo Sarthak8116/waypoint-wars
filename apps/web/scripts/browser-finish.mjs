@@ -49,8 +49,22 @@ async function ready(page, path) {
   await page.waitForTimeout(2000);
 }
 
+/** Set once any player has seen the reward register at least once. */
+let sawReveal = false;
+
 async function walkToTheEnd(page) {
   for (let i = 0; i < 8; i++) {
+    /**
+     * Multiplayer now shows the reward register between checkpoints, the same
+     * as solo. Dismiss it to carry on — and note that it appeared, because a
+     * silent regression here would remove the payoff the whole game is for
+     * while every other assertion kept passing.
+     */
+    if ((await page.locator('button:has-text("Next clue")').count()) > 0) {
+      sawReveal = true;
+      await page.locator('button:has-text("Next clue")').click();
+      await page.waitForTimeout(1200);
+    }
     if (/Final standings/i.test(await page.locator('body').innerText())) return true;
     await page.locator('button:has-text("Use demo location")').click().catch(() => {});
     await page.waitForTimeout(400);
@@ -64,6 +78,11 @@ async function walkToTheEnd(page) {
     await page.locator('input[placeholder="Your answer"]').fill((await answerFor(page, q)) ?? '');
     await page.locator('button:has-text("Submit")').first().click();
     await page.waitForTimeout(4000);
+    if ((await page.locator('button:has-text("Next clue")').count()) > 0) {
+      sawReveal = true;
+      await page.locator('button:has-text("Next clue")').click();
+      await page.waitForTimeout(1200);
+    }
   }
   return /Final standings/i.test(await page.locator('body').innerText());
 }
@@ -131,6 +150,7 @@ async function main() {
     await walkToTheEnd(host);
     await host.waitForTimeout(3000);
     const waitingBody = await host.locator('body').innerText();
+    check('the reward register appears between checkpoints', sawReveal);
     check('the first finisher is told they are home', /You.re home|Final standings/i.test(waitingBody));
     if (!/Final standings/i.test(waitingBody)) {
       check('they are told who they are waiting for', /Waiting for/i.test(waitingBody));

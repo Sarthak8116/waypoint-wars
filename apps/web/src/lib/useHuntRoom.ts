@@ -61,7 +61,7 @@ import type {
   LeaderboardEntry,
   ServerMessage,
 } from '@ww/shared';
-import type { PublicCheckpoint } from '@ww/shared';
+import type { HistoricalSource, PublicCheckpoint } from '@ww/shared';
 
 const WS_URL = process.env.NEXT_PUBLIC_MULTIPLAYER_URL ?? 'ws://localhost:2567';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:2567';
@@ -111,6 +111,27 @@ export interface RoomView {
   opponents: OpponentView[];
   leaderboard: LeaderboardEntry[];
   lastMessage: string | null;
+  /**
+   * The history earned by the last approved submission.
+   *
+   * The server has always sent this on `submission_result` — the code calls
+   * it "the earned payload", attached only on approval so that failing on
+   * purpose cannot harvest the history without walking the route. The
+   * multiplayer client kept `verdict.message` and threw the rest away, so a
+   * player who solved a checkpoint got a one-line toast while a solo player
+   * got the landmark, its story and its sources. Multiplayer is the pitch,
+   * and multiplayer never delivered the reward the game is built around.
+   */
+  lastReveal: {
+    name: string;
+    historicalReveal: string;
+    sources: HistoricalSource[];
+    hiddenDetail?: string;
+  } | null;
+  /** XP from that same submission, for the reward panel's headline. */
+  lastAward: number | null;
+  /** True when the photo could not be judged — never dressed up as verified. */
+  lastDegraded: boolean;
   error: string | null;
 }
 
@@ -129,6 +150,9 @@ const initialView: RoomView = {
   opponents: [],
   leaderboard: [],
   lastMessage: null,
+  lastReveal: null,
+  lastAward: null,
+  lastDegraded: false,
   error: null,
 };
 
@@ -158,6 +182,14 @@ export function useHuntRoom() {
             ...v,
             lastMessage: msg.verdict.message,
             // XP still comes from score_update; never trust a local sum.
+            // xpDelta here is only the headline on the reward panel.
+            ...(msg.verdict.outcome === 'approved' && msg.verdict.reveal
+              ? {
+                  lastReveal: msg.verdict.reveal,
+                  lastAward: msg.verdict.xpDelta,
+                  lastDegraded: msg.verdict.verification?.landmarkMatch === false,
+                }
+              : {}),
           };
 
         case 'hint_issued':

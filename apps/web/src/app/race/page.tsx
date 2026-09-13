@@ -56,6 +56,14 @@ export default function RacePage() {
   const [answer, setAnswer] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  /**
+   * Which checkpoint's reward panel has been dismissed.
+   *
+   * Stored as an index rather than a boolean so that dismissing one reward
+   * cannot suppress the next: the panel shows while this does not match the
+   * current checkpoint.
+   */
+  const [rewardSeen, setRewardSeen] = useState(0);
   const arrivedRef = useRef(false);
 
   /**
@@ -465,6 +473,81 @@ export default function RacePage() {
         <a className="btn btn-ghost btn-block" href="/">
           Back to start
         </a>
+      </main>
+    );
+  }
+
+  /**
+   * THE REWARD REGISTER.
+   *
+   * Solo has always shown this: a light surface, a full-bleed accent hero with
+   * the XP, then the landmark, its history and its sources. Multiplayer showed
+   * a one-line toast and moved on, discarding the reveal the server had just
+   * sent and calls "the earned payload". Same moment, same payoff — this is
+   * what the walking was for, and the mode the product is pitched on never
+   * delivered it.
+   *
+   * Keyed on checkpointIndex so it shows once per checkpoint and dismissing
+   * one cannot swallow the next.
+   */
+  if (view.lastReveal && rewardSeen !== view.checkpointIndex + 1) {
+    const reveal = view.lastReveal;
+    return (
+      <main className="wrap stack">
+        <div className={view.lastDegraded ? 'hero hero-cyan' : 'hero hero-lime'}>
+          <p className="label" style={{ marginBottom: 6 }}>
+            {view.lastDegraded ? 'Answer accepted · photo NOT verified' : 'Verified'}
+          </p>
+          <p className="display" style={{ fontSize: 52 }}>
+            +{view.lastAward ?? 0} XP
+          </p>
+        </div>
+
+        <div className="card-light">
+          <h2 style={{ color: 'var(--ink)', marginBottom: 10 }}>{reveal.name}</h2>
+          <p style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--ink-body)' }}>
+            {reveal.historicalReveal}
+          </p>
+
+          {reveal.hiddenDetail && (
+            <p style={{ fontSize: 15, color: 'var(--ink-body)', fontStyle: 'italic' }}>
+              {reveal.hiddenDetail}
+            </p>
+          )}
+
+          {reveal.sources.length > 0 && (
+            <p
+              className="label"
+              style={{ color: 'var(--ink-body)', opacity: 0.7, letterSpacing: '0.06em' }}
+            >
+              {reveal.sources.map((src, i) => (
+                <span key={src.title}>
+                  {i > 0 && ' · '}
+                  {src.url ? (
+                    <a
+                      href={src.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: 'var(--ink)' }}
+                    >
+                      {src.title}
+                    </a>
+                  ) : (
+                    src.title
+                  )}
+                </span>
+              ))}
+            </p>
+          )}
+        </div>
+
+        <button
+          className="btn btn-pink btn-block"
+          style={{ minHeight: 64, fontSize: 19 }}
+          onClick={() => setRewardSeen(view.checkpointIndex + 1)}
+        >
+          Next clue →
+        </button>
       </main>
     );
   }
