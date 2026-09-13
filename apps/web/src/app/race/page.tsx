@@ -384,7 +384,12 @@ export default function RacePage() {
       </div>
 
       {/* Other people are racing; leaving is deliberate. */}
-      <BackButton floating label="Leave" confirm="Leave the race?" />
+      <BackButton
+        floating
+        label="Leave"
+        confirm="Leave the race?"
+        onLeave={room.leaveRoom}
+      />
 
       <div ref={hudRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
 

@@ -9,8 +9,10 @@
  * silently drop out of the room they just joined, mid-demo.
  *
  * Mounting the hook in the root layout means client-side navigation keeps the
- * socket alive. A hard reload (typing a URL, refreshing) still drops it, which
- * is why /race shows a "not in a room" state rather than pretending.
+ * socket alive. A hard reload drops the socket, but no longer the player: the
+ * hook parks a reconnection token in sessionStorage and rejoins on mount, so
+ * a refresh mid-race returns to the same seat, XP and clue. /race still shows
+ * "not in a room" when there is genuinely nothing to return to.
  */
 
 import { createContext, useContext, type ReactNode } from 'react';

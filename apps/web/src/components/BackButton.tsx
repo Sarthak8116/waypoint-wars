@@ -22,6 +22,14 @@ export interface BackButtonProps {
   confirm?: string;
   /** Float over a map rather than sit in the page flow. */
   floating?: boolean;
+  /**
+   * Run just before navigating away, once the player has confirmed.
+   *
+   * Used to forget a room's reconnection token: walking out deliberately must
+   * not leave a token that pulls the player straight back in on their next
+   * visit.
+   */
+  onLeave?: () => void;
 }
 
 export default function BackButton({
@@ -29,11 +37,15 @@ export default function BackButton({
   label = 'Back',
   confirm,
   floating = false,
+  onLeave,
 }: BackButtonProps) {
   const router = useRouter();
   const [asking, setAsking] = useState(false);
 
-  const leave = () => router.push(href);
+  const leave = () => {
+    onLeave?.();
+    router.push(href);
+  };
 
   const onClick = () => {
     if (confirm && !asking) {

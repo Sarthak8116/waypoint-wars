@@ -149,7 +149,7 @@ function Lobby() {
     return (
       <main className="wrap stack">
         <div>
-          <BackButton label="Leave room" confirm="Leave this room?" />
+          <BackButton label="Leave room" confirm="Leave this room?" onLeave={room.leaveRoom} />
         </div>
 
         <div>

@@ -1,5 +1,48 @@
 'use client';
 
+
+/**
+ * Where a reconnection token is parked across a page reload.
+ *
+ * The server already holds a dropped player's seat, XP and route position for
+ * a reconnection window, and re-sends their active checkpoint when they come
+ * back. None of that could ever fire from the browser: nothing survived a
+ * refresh, so `reconnect()` was never called and the seat expired unused.
+ * Measured in production — refreshing mid-race showed "Not in a room" while
+ * the server was still holding the place.
+ *
+ * sessionStorage, not localStorage, and deliberately: the token belongs to
+ * THIS tab. A second tab opening the same room should join as itself rather
+ * than silently stealing a seat, and the token must not outlive the browser
+ * session.
+ */
+const RECONNECT_KEY = 'ww:reconnect';
+
+interface StoredSession {
+  token: string;
+  isHost: boolean;
+}
+
+function rememberSession(value: StoredSession | null): void {
+  try {
+    if (value) window.sessionStorage.setItem(RECONNECT_KEY, JSON.stringify(value));
+    else window.sessionStorage.removeItem(RECONNECT_KEY);
+  } catch {
+    // Private window or blocked storage. Reconnect simply will not be offered.
+  }
+}
+
+function recallSession(): StoredSession | null {
+  try {
+    const raw = window.sessionStorage.getItem(RECONNECT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredSession>;
+    return typeof parsed.token === 'string' ? { token: parsed.token, isHost: parsed.isHost === true } : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Colyseus client binding.
  *
@@ -169,6 +212,7 @@ export function useHuntRoom() {
   const attach = useCallback(
     (room: Room, isHost: boolean) => {
       roomRef.current = room;
+      rememberSession({ token: room.reconnectionToken, isHost });
 
       setView((v) => ({
         ...v,
@@ -307,6 +351,39 @@ export function useHuntRoom() {
     roomRef.current?.send(type, payload);
   }, []);
 
+  /**
+   * Rejoin the room this tab was in before the page reloaded.
+   *
+   * Runs once, before anything else can create or join. A failure is silent
+   * and expected: the window closes after RECONNECTION_WINDOW_SECONDS, and a
+   * stale token is the normal state of affairs on a fresh visit.
+   */
+  useEffect(() => {
+    if (roomRef.current) return;
+    const stored = recallSession();
+    if (!stored) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const room = await new Client(WS_URL).reconnect(stored.token);
+        if (cancelled) {
+          void room.leave();
+          return;
+        }
+        attach(room, stored.isHost);
+      } catch {
+        // Seat expired, room gone, or server restarted. Clear it so the next
+        // mount does not retry a token that can never work.
+        rememberSession(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [attach]);
+
   useEffect(
     () => () => {
       void roomRef.current?.leave();
@@ -315,10 +392,24 @@ export function useHuntRoom() {
     [],
   );
 
+  /**
+   * Leave for good.
+   *
+   * Distinct from a dropped connection: this forgets the token, so the player
+   * is not silently pulled back into a room they chose to walk out of.
+   */
+  const leaveRoom = useCallback(() => {
+    rememberSession(null);
+    void roomRef.current?.leave();
+    roomRef.current = null;
+    setView(initialView);
+  }, []);
+
   return {
     view,
     createRoom,
     joinRoom,
+    leaveRoom,
     startHunt: useCallback(() => send('start_hunt'), [send]),
     updateLocation: useCallback(
       (latitude: number, longitude: number, accuracyMeters?: number) =>
