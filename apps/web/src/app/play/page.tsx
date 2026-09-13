@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { HINT_TRUE_COST_XP, haversineMeters, type Checkpoint, type LatLng, type LocationSample } from '@ww/shared';
+import { XP_RULES, HINT_TRUE_COST_XP, haversineMeters, type Checkpoint, type LatLng, type LocationSample } from '@ww/shared';
 import { GameBridge, type GameHandle } from '@ww/game';
 import {
   CREATOR_PREVIEW_KEY,
@@ -639,7 +639,8 @@ function SoloPanel(props: {
             style={{ borderColor: 'var(--pink)', marginTop: 14, marginBottom: 0 }}
           >
             <p className="label" style={{ color: 'var(--pink)', marginBottom: 8 }}>
-              Not accepted
+              Not accepted{' '}
+              <span style={{ opacity: 0.75 }}>· {XP_RULES.INCORRECT_PENALTY} XP</span>
             </p>
             <p style={{ margin: '0 0 12px', fontSize: 15 }}>{lastOutcome?.message}</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>

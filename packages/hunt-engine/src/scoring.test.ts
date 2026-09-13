@@ -208,4 +208,28 @@ describe('scoreRun — the zero floor', () => {
     // And it is genuinely more than the penalty alone, which is the trap.
     expect(HINT_TRUE_COST_XP).toBeGreaterThan(Math.abs(XP_RULES.HINT_PENALTY));
   });
+
+  /**
+   * The rejection card shows XP_RULES.INCORRECT_PENALTY. This pins that label
+   * to what a wrong answer actually costs, the same way the hint test does.
+   *
+   * Measured live before the label existed: 225 XP first try, 210 XP after one
+   * wrong answer — a silent 15 XP charge the player was never told about.
+   */
+  it('one wrong answer costs exactly INCORRECT_PENALTY', () => {
+    const base = {
+      baseXp: 100,
+      expectedCompletionSeconds: 600,
+      actualSeconds: 600,
+      completed: true,
+      answerCorrect: true,
+      hintUsed: false,
+      isFinalCheckpoint: false,
+    } as const;
+
+    const clean = scoreCheckpoint({ ...base, incorrectAttempts: 0 });
+    const missed = scoreCheckpoint({ ...base, incorrectAttempts: 1 });
+
+    expect(clean.total - missed.total).toBe(Math.abs(XP_RULES.INCORRECT_PENALTY));
+  });
 });

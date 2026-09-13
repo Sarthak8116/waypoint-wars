@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { HINT_TRUE_COST_XP, haversineMeters, NO_PHOTO_SENTINEL, type LatLng, type LocationSample } from '@ww/shared';
+import { XP_RULES, HINT_TRUE_COST_XP, haversineMeters, NO_PHOTO_SENTINEL, type LatLng, type LocationSample } from '@ww/shared';
 import { GameBridge, type GameHandle } from '@ww/game';
 import { useRoom } from '@/lib/RoomProvider';
 import { useLocation } from '@/lib/useLocation';
@@ -460,6 +460,10 @@ export default function RacePage() {
             {/* A rejection must always name the way out. */}
             {view.lastMessage && (
               <div className="card" style={{ borderColor: 'var(--pink)', marginTop: 14 }}>
+                <p className="label" style={{ color: 'var(--pink)', marginBottom: 8 }}>
+                  Not accepted{' '}
+                  <span style={{ opacity: 0.75 }}>· {XP_RULES.INCORRECT_PENALTY} XP</span>
+                </p>
                 <p style={{ margin: '0 0 10px', fontSize: 15 }}>{view.lastMessage}</p>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <span className="pill pill-cyan">Retake the photo above</span>
