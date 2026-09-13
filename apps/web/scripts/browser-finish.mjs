@@ -136,6 +136,59 @@ async function main() {
     check('no page errors in either browser', errors.length === 0, errors[0] ?? '');
 
     await host.screenshot({ path: resolve(SHOT_DIR, '12-multiplayer-finish.png'), fullPage: true });
+
+    // ---------------------------------------------------------------- teams
+    /**
+     * The team claim is "one route, one XP total, one leaderboard entry", and
+     * only the first third of it was ever checked. Whether teammates share a
+     * SCORE — and whether a player who never touched a checkpoint is carried
+     * to the finish by their team — happens entirely in the back half of a
+     * game that nothing used to reach.
+     */
+    console.log('\na full team game');
+
+    const ava = await mk();
+    await ready(ava, '/lobby');
+    await ava.locator('input[aria-label="Your name"]').fill('Ava');
+    await ava.locator('button:has-text("Teams")').click();
+    await ava.locator('input[aria-label="Your team name"]').fill('Rivers');
+    await ava.locator('button:has-text("Create room")').click();
+    await ava.waitForSelector('h1.mono', { timeout: 40_000 });
+    const teamCode = (await ava.locator('h1.mono').first().textContent())?.trim() ?? '';
+
+    const joiners = {};
+    for (const [name, team] of [['Ben', 'Rivers'], ['Bea', 'Bridges']]) {
+      const page = await mk();
+      await ready(page, `/lobby?code=${teamCode}`);
+      await page.locator('input[aria-label="Your name"]').fill(name);
+      await page.locator('input[aria-label="Team name"]').fill(team);
+      await page.locator('button:has-text("Join room")').click();
+      await page.waitForSelector('text=/Waiting for the host/i', { timeout: 40_000 });
+      joiners[name] = page;
+    }
+
+    await ava.waitForTimeout(1200);
+    await ava.locator('button:has-text("Start hunt")').click();
+    await ava.waitForURL(/\/race/, { timeout: 40_000 });
+    await ava.waitForTimeout(4500);
+
+    // Ben deliberately plays NOTHING. His team should still carry him home.
+    await Promise.all([walkToTheEnd(ava), walkToTheEnd(joiners['Bea'])]);
+    await ava.waitForTimeout(4000);
+
+    const teamBody = await ava.locator('body').innerText();
+    const benBody = await joiners['Ben'].locator('body').innerText();
+
+    check('teams are ranked, not players', /Rivers/.test(teamBody) && /Bridges/.test(teamBody));
+    check(
+      'individual names do not appear in team standings',
+      !/\bAva\b|\bBen\b|\bBea\b/.test(teamBody.split('FINAL STANDINGS')[1] ?? teamBody),
+    );
+    check('the winning row is marked as the viewer\'s team', /Rivers\s*·\s*you/i.test(teamBody));
+    check('a teammate who played nothing still finishes', /Final standings/i.test(benBody));
+    check('and is credited with the team\'s progress', /5\/5/.test(benBody));
+
+    await ava.screenshot({ path: resolve(SHOT_DIR, '13-team-finish.png'), fullPage: true });
   } finally {
     await browser.close();
   }
