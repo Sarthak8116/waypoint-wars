@@ -14,7 +14,8 @@
     "check:multiplayer": "node scripts/browser-multiplayer.mjs",
     "check:creator": "node scripts/browser-creator.mjs",
     "check:teams": "node scripts/browser-teams.mjs",
-    "check:reconnect": "node scripts/browser-reconnect.mjs"
+    "check:reconnect": "node scripts/browser-reconnect.mjs",
+    "check:finish": "node scripts/browser-finish.mjs"
   },
   "dependencies": {
     "@ww/game": "workspace:*",
