@@ -437,13 +437,18 @@ function SoloPanel(props: {
           </p>
         </div>
 
+        {/* Values on one row, labels on the next, so a long route name that
+            wraps cannot push its own label out of line with the others. */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            gap: 10,
+            gridTemplateRows: 'auto auto',
+            columnGap: 10,
+            rowGap: 4,
             margin: '4px 0 16px',
             textAlign: 'center',
+            alignItems: 'end',
           }}
         >
           {(
@@ -453,22 +458,28 @@ function SoloPanel(props: {
               [props.route, 'your route'],
             ] as const
           ).map(([value, label]) => (
-            <div key={label}>
-              <p
-                style={{
-                  margin: 0,
-                  fontWeight: 900,
-                  fontSize: 22,
-                  color: 'var(--ink)',
-                  overflowWrap: 'anywhere',
-                }}
-              >
-                {value}
-              </p>
-              <p className="label" style={{ margin: 0, color: 'var(--ink-body)', opacity: 0.7 }}>
-                {label}
-              </p>
-            </div>
+            <p
+              key={`v-${label}`}
+              style={{
+                margin: 0,
+                fontWeight: 900,
+                fontSize: 20,
+                lineHeight: 1.15,
+                color: 'var(--ink)',
+                overflowWrap: 'anywhere',
+              }}
+            >
+              {value}
+            </p>
+          ))}
+          {(['checkpoints', 'discoveries', 'your route'] as const).map((label) => (
+            <p
+              key={`l-${label}`}
+              className="label"
+              style={{ margin: 0, color: 'var(--ink-body)', opacity: 0.7 }}
+            >
+              {label}
+            </p>
           ))}
         </div>
 

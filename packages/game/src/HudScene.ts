@@ -171,6 +171,7 @@ export class HudScene extends Phaser.Scene {
         break;
 
       case 'TIMER_TICK':
+        this.timerDriven = true;
         this.refreshTimer();
         break;
 
@@ -263,7 +264,30 @@ export class HudScene extends Phaser.Scene {
   // Timer — renders the number, never decides that time is up
   // -------------------------------------------------------------------------
 
+  /**
+   * True once a TIMER_TICK has actually arrived.
+   *
+   * Nothing in the app emits one — only the mock fixtures do — so the plate
+   * sat at 00:00 on every game screen for the whole run. Worse, isTimerWarning
+   * treats 0 as "out of time", so it rendered in its warning state from first
+   * paint: a red, frozen, meaningless clock in the corner of the demo.
+   *
+   * The hunt has no deadline, so the honest default is no clock. If a timed
+   * mode ever lands, one TIMER_TICK brings the plate back with no other
+   * change.
+   */
+  private timerDriven = false;
+
   private refreshTimer(): void {
+    // Only a real tick reveals it. HUD_RESYNC must not resurrect the 00:00.
+    if (!this.timerDriven) {
+      this.timerPlate.setVisible(false);
+      this.timerText.setVisible(false);
+      return;
+    }
+    this.timerPlate.setVisible(true);
+    this.timerText.setVisible(true);
+
     const warning = isTimerWarning(this.view.secondsRemaining);
     this.timerText.setText(formatCountdown(this.view.secondsRemaining));
     this.timerText.setColor(warning ? COLORS.dangerText : COLORS.ink);
@@ -399,10 +423,14 @@ export class HudScene extends Phaser.Scene {
   }
 
   private buildTimer(): void {
+    // Hidden until a TIMER_TICK arrives. refreshTimer() alone is not enough:
+    // it is only reached from a tick or a resync, so with nothing driving the
+    // clock it never ran and the 00:00 plate stayed on screen. Hide at birth.
     this.timerPlate = this.add
       .rectangle(0, 0, 96, 38, COLORS.plate, PLATE_ALPHA)
       .setStrokeStyle(1, COLORS.plateEdge, 1)
-      .setOrigin(1, 0);
+      .setOrigin(1, 0)
+      .setVisible(false);
     this.timerText = this.add
       .text(0, 0, formatCountdown(0), {
         // Space Mono here specifically: a countdown that changes every second
@@ -412,7 +440,8 @@ export class HudScene extends Phaser.Scene {
         fontSize: FONT.timer,
         color: COLORS.ink,
       })
-      .setOrigin(1, 0);
+      .setOrigin(1, 0)
+      .setVisible(false);
   }
 
   private buildProgress(): void {
