@@ -132,6 +132,28 @@ function positionAt(path: ReplayPlayer['path'], t: number): LatLng | null {
   return last;
 }
 
+/**
+ * A map label short enough not to run off the screen.
+ *
+ * Landmark names come from OpenStreetMap and hand-authored content, and some
+ * are long: "Allegheny County Courthouse — Bridge of Sighs" ran past the right
+ * edge of a 430px viewport even wrapped. The full name is already shown in the
+ * discoveries sheet, so the pin only needs enough to identify the place.
+ *
+ * Cuts at a subtitle separator first, since the useful half is almost always
+ * before the dash.
+ */
+function pinLabel(name: string): string {
+  // Drop a parenthetical alias first. Truncating through one leaves a dangling
+  // bracket — "Market Square (The Diamond)" became "Market Square (The…".
+  const head = (name.replace(/\s*\([^)]*\)\s*$/, '').split(/\s+[—–-]\s+/)[0] ?? name).trim();
+  if (head.length <= 26) return head;
+  const clipped = head.slice(0, 26);
+  const lastSpace = clipped.lastIndexOf(' ');
+  return `${(lastSpace > 12 ? clipped.slice(0, lastSpace) : clipped).trimEnd()}…`;
+}
+
+
 export default function RouteReplay({ players, durationMs, onDone, start }: RouteReplayProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -226,7 +248,9 @@ export default function RouteReplay({ players, durationMs, onDone, start }: Rout
             'text-size': 12,
             'text-offset': [0, 1.3],
             'text-anchor': 'top',
-            'text-max-width': 9,
+            'text-max-width': 8,
+            // Keep labels clear of the viewport edge, not just of each other.
+            'text-padding': 6,
             'text-allow-overlap': false,
             'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
           },
@@ -281,7 +305,7 @@ export default function RouteReplay({ players, durationMs, onDone, start }: Rout
       if (start) {
         (map.getSource('start') as maplibregl.GeoJSONSource | undefined)?.setData({
           type: 'Feature',
-          properties: { name: `START · ${start.name}` },
+          properties: { name: `START · ${pinLabel(start.name)}` },
           geometry: { type: 'Point', coordinates: [start.longitude, start.latitude] },
         } as GeoJSONObject);
       }
@@ -298,7 +322,9 @@ export default function RouteReplay({ players, durationMs, onDone, start }: Rout
         );
         // Pad the bottom for the sheet so no route hides behind it.
         map.fitBounds(bounds, {
-          padding: { top: 70, left: 40, right: 40, bottom: 300 },
+          // Generous sides: pin labels sit BESIDE their dot, so a route that
+          // fits the viewport exactly still pushes its labels off the edge.
+          padding: { top: 70, left: 64, right: 64, bottom: 300 },
           duration: 0,
         });
       }
@@ -385,7 +411,7 @@ export default function RouteReplay({ players, durationMs, onDone, start }: Rout
         type: 'FeatureCollection',
         features: reached.map((c) => ({
           type: 'Feature' as const,
-          properties: { name: c.name },
+          properties: { name: pinLabel(c.name) },
           geometry: {
             type: 'Point' as const,
             coordinates: [c.position.longitude, c.position.latitude],
