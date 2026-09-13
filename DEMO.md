@@ -4,19 +4,39 @@ Setup, then words to say. Adapt the phrasing — the structure is what matters.
 
 ## Before you walk up
 
-```bash
-pnpm dev            # web :3000, server :2567
-pnpm demo:check     # expect 19/19
-```
+It is deployed — you do not need a laptop server. Present against:
+
+**https://waypoint-wars-6k98bgh01-waypoint-wars.vercel.app**
 
 Open these tabs in advance and leave them loaded:
 
-1. `localhost:3000/demo`
-2. `localhost:3000/play`
-3. `localhost:3000/lobby` (×2 windows, side by side)
+1. `/demo` — the replay
+2. `/play?demo=1` — solo, simulated walking, no GPS prompt
+3. `/lobby` ×2 windows, side by side
 
-If `demo:check` is not 19/19, **fix that first** — it checks the four things
-that actually broke during the build.
+`?demo=1` matters: it latches Demo Mode for the whole session, so no screen
+asks for GPS mid-presentation.
+
+### ⚠ Read this before you demo photo verification
+
+**On the deployed server today, every photo submission is rejected.** The
+Gemini key is on the free tier, its per-model quota is exhausted, and
+verification answers:
+
+> "We couldn't check that photo just now — nothing was counted against you."
+
+Solo is unaffected — it scores on the written answer and labels the result
+"photo NOT verified". Multiplayer photo submission is not demoable until the
+server is redeployed:
+
+```bash
+railway variables --set ALLOW_PHOTOLESS_SUBMISSIONS=true
+railway up --service waypoint-server --detach
+```
+
+That ships a fallback model, which is quota-healthy, and photo verification
+starts working again. Until then, **demo the loop in solo** and describe photo
+verification rather than attempting it live.
 
 ---
 
@@ -47,7 +67,7 @@ that actually broke during the build.
 
 ## 1:00 — The gameplay loop (50s)
 
-**Switch to `/play`. You're mid-route or start fresh.**
+**Switch to `/play?demo=1`. Press Start hunt, then Walk there.**
 
 > "Here's what a checkpoint actually is. You get a clue — not the name of the
 > place, a clue."
@@ -116,8 +136,21 @@ Say this plainly. It reads as rigor; claiming fraud-proof reads as naivety.
 > model insisting the answer is correct, and it still rejects."
 
 **"How do you know the routes are fair?"**
-> "The three routes are within 9% of each other on measured walking distance
-> and identical on base XP. The content build fails if that drifts past 20%."
+> "Route length is NOT how we make it fair, because it can't be — the three
+> seeded routes genuinely differ, 999m to 1683m in straight-line distance
+> between stops. What makes it fair is that the speed bonus is normalized per
+> checkpoint against that checkpoint's own expected time, and clamped. A long
+> route has more checkpoints' worth of expected time to beat; it doesn't have
+> a harder bar on any single one."
+
+Do not claim the routes are within 9% of each other. They are not, there is no
+build check enforcing it, and the declared `approxDistanceMeters` values
+(1700 / 1850 / 1550) are hand-written estimates that do not match the
+geometry. The per-checkpoint normalization is the real answer and it is a
+better one.
+
+**GENERATED** hunts are balanced — the generator runs a swap pass that got
+Savannah from a 51% spread to 4%. That is worth saying, and it is measured.
 
 **"Did you walk these routes?"**
 > Be honest. The coordinates are desk estimates with tight radii; the demo runs
@@ -135,7 +168,8 @@ Say this plainly. It reads as rigor; claiming fraud-proof reads as naivety.
 | Symptom | Do this |
 | --- | --- |
 | Map blank | OSM tiles need network — see "Warm the tile cache" below |
-| Verification hangs | Check `curl localhost:2567/health` — if `gemini` isn't `live`, the key didn't load |
+| Photo always rejected | Expected today — Gemini quota. See the warning at the top. Use solo |
+| Verification hangs | `curl <server>/health` — if `gemini` isn't `live`, the key didn't load |
 | Lobby won't join | The code resolves via `/api/rooms/:code`; the server must be running |
 | Anything else | `/demo` is a self-contained, pre-computed replay. It needs the web app only |
 
@@ -152,7 +186,7 @@ routes converging on Downtown" is most of the visual pitch.
 **Do this while you still have good wifi:**
 
 1. Open `/demo` and let the replay run once, start to finish.
-2. Open `/play` and walk one checkpoint.
+2. Open `/play?demo=1` and walk one checkpoint.
 3. Do NOT hard-refresh after that.
 
 Those tiles are then in the browser's HTTP cache and will render even if the
