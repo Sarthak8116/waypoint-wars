@@ -16,6 +16,15 @@ export interface OpponentProgress {
   name: string;
   checkpointIndex: number;
   totalCheckpoints: number;
+  /**
+   * False while they are inside their reconnection window.
+   *
+   * The server has always tracked this and the client has always carried it,
+   * and nothing ever showed it — so a rival whose laptop closed sat frozen at
+   * "0/5" and read as merely slow. Losing to someone who has left is a
+   * different race from losing to someone who is stuck.
+   */
+  connected?: boolean;
 }
 
 export interface ProgressBarProps {
@@ -81,18 +90,26 @@ export default function ProgressBar({
 
         {opponents.length > 0 && (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
-            {opponents.map((o) => (
-              <span
-                key={o.playerId}
-                className="pill"
-                style={{ fontSize: 11, padding: '3px 9px' }}
-              >
-                {o.name}{' '}
-                <span style={{ opacity: 0.72 }}>
-                  {o.checkpointIndex}/{o.totalCheckpoints || safeTotal}
+            {opponents.map((o) => {
+              const gone = o.connected === false;
+              return (
+                <span
+                  key={o.playerId}
+                  className="pill"
+                  style={{
+                    fontSize: 11,
+                    padding: '3px 9px',
+                    opacity: gone ? 0.5 : 1,
+                  }}
+                  title={gone ? `${o.name} has dropped out` : undefined}
+                >
+                  {o.name}{' '}
+                  <span style={{ opacity: 0.72 }}>
+                    {gone ? 'offline' : `${o.checkpointIndex}/${o.totalCheckpoints || safeTotal}`}
+                  </span>
                 </span>
-              </span>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -79,6 +79,64 @@ async function main() {
     const afterLeave = await page.locator('body').innerText();
     check('a deliberate exit stays exited', /Not in a room/i.test(afterLeave));
 
+    // ------------------------------------------------------ the host leaves
+    /**
+     * A closed laptop must not end everyone else's game.
+     *
+     * The host is just a player with a start button — nothing about the room
+     * depends on them staying — but that had never been demonstrated, and it
+     * is a realistic way for a demo to go wrong. The second half matters too:
+     * the server has always tracked `connected` and the client has always
+     * carried it, and until now nothing rendered it, so a rival who walked
+     * away sat frozen at "0/5" and read as merely slow.
+     */
+    console.log('\nthe host leaves mid-race');
+
+    const mk = async () => {
+      const c = await browser.newContext({ viewport: { width: 430, height: 900 } });
+      const pg = await c.newPage();
+      pg.on('pageerror', (e) => {
+        if (!isHeadlessGlNoise(e)) errors.push(String(e));
+      });
+      return pg;
+    };
+
+    const host = await mk();
+    await gotoReady(host, `${BASE}/lobby`);
+    await host.locator('input[aria-label="Your name"]').fill('Ava');
+    await host.locator('button:has-text("Create room")').click();
+    await host.waitForSelector('h1.mono', { timeout: 40_000 });
+    const roomCode = (await host.locator('h1.mono').first().textContent())?.trim() ?? '';
+
+    const guest = await mk();
+    await gotoReady(guest, `${BASE}/lobby?code=${roomCode}`);
+    await guest.locator('input[aria-label="Your name"]').fill('Ben');
+    await guest.locator('button:has-text("Join room")').click();
+    await guest.waitForSelector('text=/Waiting for the host/i', { timeout: 40_000 });
+    await host.waitForTimeout(1200);
+    await host.locator('button:has-text("Start hunt")').click();
+    await Promise.all([
+      host.waitForURL(/\/race/, { timeout: 40_000 }),
+      guest.waitForURL(/\/race/, { timeout: 40_000 }),
+    ]);
+    await guest.waitForTimeout(5000);
+
+    const clueBefore = ((await guest.locator('[data-testid="clue"]').first().textContent().catch(() => '')) ?? '').trim();
+    check('the guest is racing', clueBefore.length > 0, clueBefore.slice(0, 32));
+
+    await host.context().close();
+
+    let offline = false;
+    for (let i = 0; i < 5 && !offline; i++) {
+      await guest.waitForTimeout(5000);
+      offline = /offline/i.test(await guest.locator('body').innerText());
+    }
+    const afterHost = await guest.locator('body').innerText();
+
+    check('the guest is not thrown out with the host', !/Not in a room/i.test(afterHost));
+    check('the guest can still play', /Walk there|Use demo location|Submit|You.re here/i.test(afterHost));
+    check('the departed rival is shown as offline, not merely slow', offline);
+
     check('no page errors', errors.length === 0, errors[0] ?? '');
   } finally {
     await browser.close();
