@@ -370,7 +370,16 @@ export default function RacePage() {
 
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
-      <div style={{ position: 'absolute', inset: 0 }}>
+      {/**
+        * Opponent regions draw into a MapLibre canvas layer, so there is no DOM
+        * node to assert on and no way to tell "rendered" from "silently empty"
+        * from outside. They were silently empty for the whole project's life.
+        * This surfaces the count the map is actually given.
+        */}
+      <div
+        style={{ position: 'absolute', inset: 0 }}
+        data-opponent-regions={opponentRegions.length}
+      >
         <HuntMap
           player={location.position}
           accuracyMeters={location.accuracyMeters}

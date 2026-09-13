@@ -207,6 +207,28 @@ async function main() {
         .catch(() => 0);
       check('guest can see the opponent on their screen', guestSeesOpponent > 0);
 
+      /**
+       * The grid-snapped opponent region — "you can see roughly where your
+       * rivals are, and only roughly" — is drawn into a MapLibre canvas layer,
+       * so nothing in the DOM says whether it rendered or was silently empty.
+       * It was silently empty for the entire project, because the client keyed
+       * opponents by sessionId while the server keyed regions by player id.
+       *
+       * The host has been walking, so the guest must have a region for them.
+       * Polled rather than read once: locations are pushed on a 5s tick.
+       */
+      let regions = '0';
+      for (let i = 0; i < 6 && regions === '0'; i++) {
+        await guest.page.waitForTimeout(4000);
+        regions =
+          (await guest.page
+            .locator('[data-opponent-regions]')
+            .first()
+            .getAttribute('data-opponent-regions')
+            .catch(() => '0')) ?? '0';
+      }
+      check('an opponent region reaches the map', Number(regions) > 0, `${regions} region(s)`);
+
       const bodyHost = await host.page.locator('body').innerText();
       const advanced = /Checkpoint 2 of|You're here/i.test(bodyHost);
       check('host advanced past the first checkpoint', advanced, bodyHost.slice(0, 60).replace(/\n/g, ' | '));
