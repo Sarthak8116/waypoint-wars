@@ -141,6 +141,23 @@ async function main() {
         'one-click demo CTA present',
         (await page.locator('a:has-text("Start Pittsburgh demo")').count()) > 0,
       );
+
+      /**
+       * The join box is the landing page's primary call to action and had no
+       * coverage at all. It must reach the lobby WITH the code carried over —
+       * a player who retypes their code because the box was decorative has
+       * already had a worse first thirty seconds than they needed to.
+       */
+      await page.locator('input[aria-label="Room code"]').fill('ABC234');
+      await page.locator('button:has-text("Join a hunt")').click();
+      await page.waitForURL(/\/lobby/, { timeout: 15_000 }).catch(() => {});
+      check('join box reaches the lobby', /\/lobby/.test(page.url()), page.url());
+      const carried = await page
+        .locator('input[aria-label="Room code"]')
+        .inputValue()
+        .catch(() => '');
+      check('the code is carried over, not retyped', carried === 'ABC234', carried);
+      await page.goBack({ waitUntil: 'domcontentloaded' });
       await page.locator('button:has-text("Status")').click().catch(() => {});
       await page.waitForTimeout(1500);
       const badges = await page.locator('.pill').allTextContents();
