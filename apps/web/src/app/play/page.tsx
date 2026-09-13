@@ -13,7 +13,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { haversineMeters, type Checkpoint, type LatLng, type LocationSample } from '@ww/shared';
 import { GameBridge, type GameHandle } from '@ww/game';
-import { loadHuntBundle, routeCheckpoints, type HuntBundle } from '@/lib/huntData';
+import {
+  CREATOR_PREVIEW_KEY,
+  loadHuntBundle,
+  routeCheckpoints,
+  type HuntBundle,
+} from '@/lib/huntData';
 import { useLocation } from '@/lib/useLocation';
 import { useSoloHunt } from '@/lib/useSoloHunt';
 import { isDemoMode } from '@/lib/demoMode';
@@ -54,11 +59,31 @@ export default function PlayPage() {
    * during the server render.
    */
   useEffect(() => {
-    if (!isDemoMode()) {
+    /**
+     * A creator preview skips the gate too.
+     *
+     * The editor writes a draft to localStorage and opens /play to walk it.
+     * Asking that person for their GPS location, and then offering to find a
+     * hunt near them, is answering a question they did not ask — they came
+     * here to see the checkpoints they just authored. Gating this broke the
+     * editor's Preview button; check:creator caught it.
+     */
+    let hasPreview = false;
+    try {
+      hasPreview = window.localStorage.getItem(CREATOR_PREVIEW_KEY) !== null;
+    } catch {
+      // Private window or blocked storage — there is no preview to honour.
+    }
+
+    const demoRequested = isDemoMode();
+    if (!hasPreview && !demoRequested) {
       setBooting(false);
       return;
     }
-    setDemo(true);
+
+    // Demo Mode simulates movement; a preview keeps the normal GPS/Demo choice.
+    if (demoRequested) setDemo(true);
+
     let cancelled = false;
     void loadHuntBundle().then((b) => {
       if (cancelled) return;
@@ -76,7 +101,7 @@ export default function PlayPage() {
         <div>
           <BackButton label="Home" />
         </div>
-        <LoadingPanel what="Loading the Pittsburgh hunt" timeoutMs={10_000} />
+        <LoadingPanel what="Loading the hunt" timeoutMs={10_000} />
       </main>
     );
   }
