@@ -243,11 +243,18 @@ export function useHuntRoom() {
   );
 
   const createRoom = useCallback(
-    async (playerName: string, mode: GameMode, huntId: string) => {
+    /**
+     * @param teamName Ignored by the server outside `team-race`. Inside it,
+     *   players sending the SAME name share one route, one XP total and one
+     *   leaderboard entry — that matching is the whole team mechanic, and it
+     *   never worked from the browser because this argument did not exist.
+     *   Omitted, every player silently became a team of one.
+     */
+    async (playerName: string, mode: GameMode, huntId: string, teamName?: string) => {
       setView((v) => ({ ...v, phase: 'connecting', error: null }));
       try {
         const client = new Client(WS_URL);
-        const room = await client.create('hunt', { playerName, mode, huntId });
+        const room = await client.create('hunt', { playerName, mode, huntId, teamName });
         attach(room, true);
         return room;
       } catch (err) {
@@ -263,7 +270,7 @@ export function useHuntRoom() {
   );
 
   const joinRoom = useCallback(
-    async (code: string, playerName: string) => {
+    async (code: string, playerName: string, teamName?: string) => {
       setView((v) => ({ ...v, phase: 'connecting', error: null }));
       try {
         // The six-character code is NOT the Colyseus roomId — the server keeps
@@ -281,7 +288,7 @@ export function useHuntRoom() {
 
         const { roomId } = (await res.json()) as { roomId: string };
         const client = new Client(WS_URL);
-        const room = await client.joinById(roomId, { playerName });
+        const room = await client.joinById(roomId, { playerName, teamName });
         attach(room, false);
         return room;
       } catch (err) {

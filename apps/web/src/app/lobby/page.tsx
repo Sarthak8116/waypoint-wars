@@ -50,6 +50,7 @@ function Lobby() {
   const [name, setName] = useState('');
   const [code, setCode] = useState(params.get('code')?.toUpperCase() ?? '');
   const [mode, setMode] = useState<GameMode>('individual-race');
+  const [team, setTeam] = useState('');
   const [qr, setQr] = useState<string | null>(null);
   const [bundle, setBundle] = useState<HuntBundle | null>(null);
   const [copied, setCopied] = useState(false);
@@ -102,14 +103,19 @@ function Lobby() {
   const handleCreate = useCallback(() => {
     if (busyRef.current) return;
     setBusy('create');
-    void room.createRoom(name.trim() || 'Host', mode, HUNT_ID);
-  }, [room, name, mode]);
+    void room.createRoom(
+      name.trim() || 'Host',
+      mode,
+      HUNT_ID,
+      mode === 'team-race' ? team.trim() || undefined : undefined,
+    );
+  }, [room, name, mode, team]);
 
   const handleJoin = useCallback(() => {
     if (busyRef.current) return;
     setBusy('join');
-    void room.joinRoom(code.trim(), name.trim() || 'Player');
-  }, [room, code, name]);
+    void room.joinRoom(code.trim(), name.trim() || 'Player', team.trim() || undefined);
+  }, [room, code, name, team]);
 
   const handleStart = useCallback(() => {
     if (busyRef.current) return;
@@ -182,6 +188,7 @@ function Lobby() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <span className="pill pill-lime">
               You{view.isHost ? ' · host' : ''}
+              {team.trim() ? ` · ${team.trim()}` : ''}
             </span>
             {view.opponents.map((o) => (
               <span key={o.playerId} className="pill">
@@ -289,6 +296,21 @@ function Lobby() {
           maxLength={6}
           aria-label="Room code"
         />
+        {/* Optional, and harmless outside a team room: the server ignores
+            teamName unless the host chose Teams. Shown unconditionally
+            because the joiner cannot know the room's mode before joining. */}
+        <input
+          className="field"
+          value={team}
+          onChange={(e) => setTeam(e.target.value)}
+          placeholder="Team name (optional)"
+          maxLength={20}
+          aria-label="Team name"
+        />
+        <p className="dim" style={{ fontSize: 13, margin: '-4px 0 0' }}>
+          In a team room, everyone typing the same name shares one route and one
+          score. Leave it blank to play on your own.
+        </p>
         <button
           className="btn btn-cyan btn-block"
           onClick={handleJoin}
@@ -315,6 +337,22 @@ function Lobby() {
             </button>
           ))}
         </div>
+        {mode === 'team-race' && (
+          <>
+            <input
+              className="field"
+              value={team}
+              onChange={(e) => setTeam(e.target.value)}
+              placeholder="Your team name"
+              maxLength={20}
+              aria-label="Your team name"
+            />
+            <p className="dim" style={{ fontSize: 13, margin: '-4px 0 0' }}>
+              Teammates join with this exact name. Everyone else who joins with a
+              different name forms their own team.
+            </p>
+          </>
+        )}
         <button
           className="btn btn-pink btn-block"
           onClick={handleCreate}
