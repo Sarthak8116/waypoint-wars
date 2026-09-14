@@ -81,9 +81,10 @@ showcase COR-TEN, exactly as your reveal says.
    ones most likely to have changed.
 2. **Coordinates.** Still desk estimates with 30–40m radii. Fine for the
    simulated demo; a walk-through is needed before real-GPS play.
-3. **Byham 1903 Gayety → Fulton → 1995 · Fort Duquesne 1754/1758 · Point
-   fountain 1974, Wright's 1947 idea, the "fourth river" aquifer.** Still
-   unchecked. Nothing in them looks wrong, but that is not the same as checked.
+3. ~~The remaining smaller dates and attributions.~~ **Checked — see below.
+   Every factual claim in the seeded content has now been checked against a
+   public source.** What is still open is only item 1: whether each observable
+   is physically still there.
 
 ---
 
@@ -120,6 +121,43 @@ free-standing four-dial clock dates from 1887). "Meet me under Kaufmann's clock"
 
 The **2,500 lb** figure is widely repeated but is not in the sources checked —
 uncited rather than contradicted.
+
+### ❌ Byham Theater — CORRECTED
+
+The reveal said it **"opened in 1903 as the Gayety."** It was *built* in 1903
+and **opened on Halloween night 1904**. Corrected.
+
+The rest holds: a vaudeville house that hosted **Ethel Barrymore and Helen
+Hayes** ✅; renamed **The Fulton in the 1930s** when it became a full-time
+movie house ✅; renamed the **Byham in 1995** after a naming gift from Carolyn
+and William Byham ✅.
+
+The **pressed-copper cherubs** are not in the sources checked — uncited rather
+than contradicted.
+
+### ❌ The Point — CORRECTED
+
+The reveal credited Frank Lloyd Wright with the idea for the fountain: *"opened
+in 1974 (an idea Frank Lloyd Wright first floated in 1947)."* He had nothing to
+do with the fountain. What Wright proposed for the Point, in **April 1947**,
+was a **circular civic centre over 1,000 feet across** containing an opera
+house, arena, cinemas and a convention hall, wrapped in a spiral roadway. It
+was never built, and the site became Point State Park.
+
+Rewritten to say that, which is both true and a far better story than the
+version it replaces.
+
+Verified around it: fountain **opened 1974** ✅, sprays to **150 feet** ✅,
+the fountain is the **western terminus of the Great Allegheny Passage** ✅.
+The **bronze Mile 0 medallion** and the **"fourth river" aquifer** are not in
+the sources checked — uncited rather than contradicted.
+
+### ✅ Fort Duquesne
+
+Built by the French in **1754** at the confluence ✅; the French **destroyed
+and abandoned it** ahead of the Forbes Expedition on **25 November 1758**
+rather than surrender it ✅; the British then built the larger **Fort Pitt**
+(1759–61) ✅.
 
 ### ✅ Dollar Bank lions
 
@@ -158,4 +196,8 @@ answer than a confident guess.
 - [The Original Oyster House — Our Story](http://www.originaloysterhousepittsburgh.com/our-story)
 - [Kaufmann's — Wikipedia](https://en.wikipedia.org/wiki/Kaufmann%27s)
 - [Dollar Bank — Wikipedia](https://en.wikipedia.org/wiki/Dollar_Bank)
+- [Byham Theater — Wikipedia](https://en.wikipedia.org/wiki/Byham_Theater)
+- [Fort Duquesne — Wikipedia](https://en.wikipedia.org/wiki/Fort_Duquesne)
+- [Point State Park — Wikipedia](https://en.wikipedia.org/wiki/Point_State_Park)
+- [Point Park Civic Center — Wikipedia](https://en.wikipedia.org/wiki/Point_Park_Civic_Center)
 - [Market Square Historic District walking tour — Pittsburgh History & Landmarks Foundation](https://phlf.org/event/walking-tour-market-square-historic-district/)

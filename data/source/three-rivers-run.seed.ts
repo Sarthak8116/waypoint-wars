@@ -397,7 +397,7 @@ export const checkpoints = [
     },
     scoring: { baseXp: 100, observationBonusXp: 30, hardPhotoBonusXp: 20 },
     historicalReveal: {
-      full: "This theater opened in 1903 as the Gayety, a vaudeville house that hosted stars like Ethel Barrymore and Helen Hayes. In the 1930s it became the Fulton movie palace, and in 1995 the Pittsburgh Cultural Trust restored it and renamed it the Byham after a gift from the Byham family. Three names, three eras, one stubbornly surviving building — with pressed-copper cherubs still watching from the ceiling inside.",
+      full: "This theater was built in 1903 and opened on Halloween night 1904 as the Gayety, a vaudeville house that hosted stars like Ethel Barrymore and Helen Hayes. In the 1930s it became the Fulton movie palace, and in 1995 the Pittsburgh Cultural Trust restored it and renamed it the Byham after a gift from the Byham family. Three names, three eras, one stubbornly surviving building — with pressed-copper cherubs still watching from the ceiling inside.",
       audioShort: "Opened in 1903 as the Gayety, later the Fulton movie palace, and the Byham since 1995 — three names, one surviving theater.",
     },
     sources: ["Wikipedia: Byham Theater", "Pittsburgh Cultural Trust", "Experience Pennsylvania"],
@@ -507,7 +507,7 @@ export const finalDestination = {
     finalDestinationBonusXp: 150,
   },
   historicalReveal: {
-    full: "This is the Point — where the Allegheny and the Monongahela join to form the Ohio, the spot that made Pittsburgh worth fighting three empires over and the birthplace of the city. The 150-foot fountain, opened in 1974 (an idea Frank Lloyd Wright first floated in 1947), draws on water locals call the 'fourth river,' an aquifer beneath your feet. The bronze medallion marks Mile 0 — the western end of the 150-mile Great Allegheny Passage. Three rivers, three trails, one finish.",
+    full: "This is the Point — where the Allegheny and the Monongahela join to form the Ohio, the spot that made Pittsburgh worth fighting three empires over and the birthplace of the city. The 150-foot fountain opened in 1974, drawing on water locals call the 'fourth river,' an aquifer beneath your feet. Frank Lloyd Wright had his own plans for this spot — a vast circular civic centre he proposed in April 1947, and which was never built. The bronze medallion marks Mile 0 — the western end of the 150-mile Great Allegheny Passage. Three rivers, three trails, one finish.",
     audioShort: "The Point, where the Allegheny and Monongahela form the Ohio — Pittsburgh's birthplace, its 150-foot fountain, and Mile 0 of the Great Allegheny Passage.",
   },
   finalCompletionAnimationConcept:
