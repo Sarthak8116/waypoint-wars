@@ -383,12 +383,16 @@ export default function RacePage() {
     return (
       <main className="wrap stack">
         {me && (
-          <div className={`hero ${me.rank === 1 ? 'hero-lime' : 'hero-cyan'}`}>
+          <div className={`hero ${!me.finished ? 'hero-pink' : me.rank === 1 ? 'hero-lime' : 'hero-cyan'}`}>
+            {/* Three outcomes, and "You finished" is wrong for one of them.
+                Once a hunt can end on a grace timer, a player who never
+                reached the finish gets this screen too — and their own row
+                below already says "didn't finish". */}
             <p className="label" style={{ marginBottom: 6 }}>
-              {me.rank === 1 ? 'You won' : 'You finished'}
+              {!me.finished ? "You didn't finish" : me.rank === 1 ? 'You won' : 'You finished'}
             </p>
             <p className="display" style={{ fontSize: 76, lineHeight: 0.9 }}>
-              {ordinal(me.rank)}
+              {me.finished ? ordinal(me.rank) : `${me.checkpointsCompleted}/${me.totalCheckpoints}`}
             </p>
             <p className="label" style={{ marginTop: 6, marginBottom: 0 }}>
               {me.xp} XP · {me.checkpointsCompleted}/{me.totalCheckpoints} checkpoints
