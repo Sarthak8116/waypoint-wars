@@ -102,6 +102,21 @@ export const OPPONENT_REGION_RADIUS_METERS = 150;
  */
 export const RECONNECTION_WINDOW_SECONDS = 60;
 
+/**
+ * How long a hunt waits for its stragglers once someone has finished.
+ *
+ * Long enough that a slow player is not cut off mid-checkpoint, short enough
+ * that a group is not held hostage by someone who has stopped playing. The
+ * standings distinguish who finished, so ending early costs nothing but the
+ * wait. Overridable so a test does not have to sit through five minutes.
+ */
+export function finishGraceMs(): number {
+  // Read per call, not at module load, so a test can shorten it without
+  // re-importing the module — and so a deployment can tune it by env.
+  const configured = Number(process.env.FINISH_GRACE_MS);
+  return Number.isFinite(configured) && configured > 0 ? configured : 5 * 60_000;
+}
+
 /** Floods of GPS fixes are dropped rather than processed. */
 export const LOCATION_MIN_INTERVAL_MS = 400;
 
@@ -136,6 +151,9 @@ interface Member {
 const ROOM_MODES: readonly GameMode[] = ['individual-race', 'team-race'];
 
 export class HuntRoom extends Room<HuntRoomState> {
+  /** True once the end-of-hunt grace timer is running. See armFinishGrace. */
+  private finishGraceArmed = false;
+
   private hunt!: Hunt;
   private routes: Route[] = [];
 
@@ -885,9 +903,56 @@ export class HuntRoom extends Room<HuntRoomState> {
   private maybeFinishRoom(now: number): void {
     if (this.state.finishedAt !== 0) return;
     if (this.runs.size === 0) return;
-    for (const run of this.runs.values()) {
-      if (!isRunFinished(run)) return;
+
+    const stillOut = [...this.runs.values()].some((run) => !isRunFinished(run));
+    if (stillOut) {
+      /**
+       * Somebody is still out there, so hold — but not forever.
+       *
+       * A hunt used to end only when EVERY run finished, with no other way
+       * out. One player who wandered off, closed a tab or simply stopped
+       * playing denied everyone else the final standings — the payoff screen
+       * the whole game builds towards, withheld indefinitely by one person's
+       * inaction.
+       *
+       * Armed once, on the first finish, so the grace period measures time
+       * since the leader got home rather than restarting on every event.
+       */
+      this.armFinishGrace();
+      return;
     }
+
+    this.finishRoom(now);
+  }
+
+  /**
+   * Start the one-shot timer that ends a hunt whose stragglers never arrive.
+   *
+   * Uses the room clock rather than a bare setTimeout so it dies with the
+   * room: a timer firing on a disposed room would broadcast into nothing and
+   * keep the process holding state it no longer owns.
+   */
+  private armFinishGrace(): void {
+    if (this.finishGraceArmed) return;
+    this.finishGraceArmed = true;
+    this.clock.setTimeout(() => {
+      if (this.state.finishedAt !== 0) return;
+      console.info(
+        `[room ${this.state.code}] ending after grace — some runs never completed.`,
+      );
+      this.finishRoom(Date.now());
+    }, finishGraceMs());
+  }
+
+  /**
+   * End the hunt and publish the standings.
+   *
+   * Entries carry `finished` per player, so a run that never completed is
+   * ranked honestly as incomplete rather than omitted or quietly counted as
+   * done.
+   */
+  private finishRoom(now: number): void {
+    if (this.state.finishedAt !== 0) return;
     this.state.finishedAt = now;
     const entries = this.leaderboardEntries();
     this.applyRanks(entries);

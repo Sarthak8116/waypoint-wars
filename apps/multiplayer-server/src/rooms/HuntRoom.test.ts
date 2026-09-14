@@ -24,7 +24,7 @@ import { HINT_TRUE_COST_XP,
   type SubmissionVerdict,
 } from '@ww/shared';
 import type { VerificationInput, VerificationProvider } from '@ww/verification';
-import type { VerificationResult } from '@ww/shared';
+import type { LeaderboardEntry, VerificationResult } from '@ww/shared';
 
 import { huntStore } from '../hunt-store.js';
 import { seed } from '../seed.js';
@@ -890,4 +890,42 @@ describe('team-race', () => {
     // Two teams, two entries — three players do not become three entries.
     expect(room.state.leaderboard.length).toBe(2);
   });
+
+  /**
+   * One player who stops playing must not deny everyone else the standings.
+   *
+   * A hunt used to end only when EVERY run finished, with no other way out, so
+   * a wandered-off player withheld the payoff screen indefinitely. The grace
+   * timer arms on the FIRST finish and ends the hunt regardless — the
+   * leaderboard already records who actually got there, so ending costs
+   * nothing but the wait.
+   */
+  it('ends the hunt after a grace period when a player never finishes', async () => {
+    process.env['FINISH_GRACE_MS'] = '500';
+    try {
+      const h = await setup();
+      await startHunt(h);
+
+      const finished = h.guest.waitForMessage('hunt_finished');
+
+      // The host walks their whole route. The guest does nothing at all.
+      for (const checkpoint of checkpointsFor(h.room, h.host.sessionId)) {
+        await arriveAt(h.host, checkpoint);
+        await submitHonestly(h.host, checkpoint);
+      }
+
+      const message = await finished;
+      expect(message.entries.length).toBeGreaterThan(1);
+
+      // Honest about who actually arrived.
+      const guestEntry = message.entries.find(
+        (e: LeaderboardEntry) => e.displayName === 'Linus',
+      );
+      const hostEntry = message.entries.find((e: LeaderboardEntry) => e.displayName === 'Ada');
+      expect(hostEntry?.finished).toBe(true);
+      expect(guestEntry?.finished).toBe(false);
+    } finally {
+      delete process.env['FINISH_GRACE_MS'];
+    }
+  }, 40_000);
 });
