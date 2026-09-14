@@ -121,7 +121,7 @@ export const checkpoints = [
     },
     scoring: { baseXp: 100, observationBonusXp: 30, hardPhotoBonusXp: 20 },
     historicalReveal: {
-      full: "Philadelphia surveyors laid out this square in 1784 and called it 'the Diamond,' a Scotch-Irish word for a town's public square. It held Pittsburgh's first courthouse, its first jail, and the first newspaper published west of the Alleghenies. The Original Oyster House opened in 1870 on the site of the 1827 Bear Tavern and is still the oldest bar and restaurant in the city.",
+      full: "Colonel George Woods and his assistant Thomas Vickroy laid out this square in 1784, surveying for the Penn family, and called it 'the Diamond,' a Scotch-Irish word for a town's public square. It held Pittsburgh's first courthouse, its first jail, and the first newspaper published west of the Alleghenies. The Original Oyster House opened in 1870 on the site of the 1827 Bear Tavern and is still the oldest bar and restaurant in the city.",
       audioShort: "This is 'the Diamond,' Pittsburgh's public square since 1784 — home to its first courthouse and, since 1870, the city's oldest bar.",
     },
     sources: ["WPXI 'On This Day'", "Popular Pittsburgh", "Post-Gazette The Digs"],

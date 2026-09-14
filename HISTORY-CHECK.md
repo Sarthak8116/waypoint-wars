@@ -81,14 +81,55 @@ showcase COR-TEN, exactly as your reveal says.
    ones most likely to have changed.
 2. **Coordinates.** Still desk estimates with 30–40m radii. Fine for the
    simulated demo; a walk-through is needed before real-GPS play.
-3. **Claims I did not spot-check**, mostly smaller dates and attributions:
-   Market Square 1784 / "the Diamond" / Original Oyster House 1870 · Kaufmann's
-   clock 2,500 lb, 1913 · Dollar Bank lions, Max Kohler, 1871, Connecticut
-   brownstone · Byham 1903 Gayety → Fulton → 1995 · Fort Duquesne 1754/1758 ·
-   Point fountain 1974, Wright's 1947 idea, the "fourth river" aquifer.
+3. **Byham 1903 Gayety → Fulton → 1995 · Fort Duquesne 1754/1758 · Point
+   fountain 1974, Wright's 1947 idea, the "fourth river" aquifer.** Still
+   unchecked. Nothing in them looks wrong, but that is not the same as checked.
 
-   Nothing in them looked wrong, and the seven I *did* check were all correct,
-   which is a good signal about the rest. But "a good signal" is not "checked".
+---
+
+## Checked 2026-09-13 — and one was wrong
+
+### ❌ Market Square — CORRECTED
+
+The reveal said **"Philadelphia surveyors laid out this square in 1784."** They
+were not Philadelphia surveyors. The survey was carried out by **Colonel George
+Woods, assisted by Thomas Vickroy**, both of Bedford County, working *for* the
+Philadelphia-based Penn proprietors — "A Draught of the Town Plat of Pittsburgh,
+Surveyed for John Penn, Jr., and John Penn, by George Woods, May 31st 1784."
+
+Corrected in `data/source/three-rivers-run.seed.ts`, which is the content of
+record. **`data/pittsburgh-hunts.json` is a build artifact** — `pnpm build`
+regenerates it from the seed, so an edit made there is silently discarded on
+the next build. I made that mistake twice before noticing the file reverting
+under me. If you are correcting a fact, edit the seed.
+
+The rest of that reveal holds: "the Diamond" is the Scotch-Irish idiom for a
+public square ✅; first courthouse and first jail (both 1795) ✅; first newspaper
+west of the Alleghenies, the Pittsburgh Gazette, 1786 ✅.
+
+### ✅ Original Oyster House
+
+Opened **12 October 1870** ✅; its current premises were the **Bear Tavern,
+1827** ✅; it is **Pittsburgh's oldest bar and restaurant** ✅.
+
+### ✅ Kaufmann's clock
+
+The current clock went up **with the 1913 store expansion** ✅ (an earlier
+free-standing four-dial clock dates from 1887). "Meet me under Kaufmann's clock"
+✅. The Kaufmanns did commission Wright's **Fallingwater** ✅.
+
+The **2,500 lb** figure is widely repeated but is not in the sources checked —
+uncited rather than contradicted.
+
+### ✅ Dollar Bank lions
+
+**Max Kohler**, **1871**, carved from a single block of brownstone ✅; the
+weather-worn originals moved **indoors in February 2012** ✅; Dollar Bank really
+did let anyone open an account with **one dollar** ✅.
+
+Two nuances worth knowing if challenged: Kohler had an assistant, **Richard C.
+Morgan**, whom the reveal does not name; and the sources say "quarry-bedded
+brownstone" without confirming **Connecticut** as the source.
 
 ---
 
@@ -113,3 +154,8 @@ answer than a confident guess.
 - [Katz Plaza — Pittsburgh Cultural Trust](https://trustarts.org/pct_home/visual-arts/long-term-projects/katz-plaza)
 - [Agnes R. Katz Plaza — TCLF](https://www.tclf.org/landscapes/agnes-r-katz-plaza)
 - [U.S. Steel Tower — Wikipedia](https://en.wikipedia.org/wiki/U.S._Steel_Tower)
+- [Market Square — Wikipedia](https://en.wikipedia.org/wiki/Market_Square_(Pittsburgh))
+- [The Original Oyster House — Our Story](http://www.originaloysterhousepittsburgh.com/our-story)
+- [Kaufmann's — Wikipedia](https://en.wikipedia.org/wiki/Kaufmann%27s)
+- [Dollar Bank — Wikipedia](https://en.wikipedia.org/wiki/Dollar_Bank)
+- [Market Square Historic District walking tour — Pittsburgh History & Landmarks Foundation](https://phlf.org/event/walking-tour-market-square-historic-district/)
