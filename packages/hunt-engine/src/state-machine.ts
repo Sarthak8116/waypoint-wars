@@ -91,6 +91,16 @@ export type HuntAction =
   | { type: 'SUBMIT'; checkpointIndex: number; now: number }
   | { type: 'VERIFICATION_FAILED'; checkpointIndex: number; now: number }
   | { type: 'VERIFICATION_NEEDS_REVIEW'; checkpointIndex: number; now: number }
+  /**
+   * The verifier could not answer — a rate limit, a timeout, an outage.
+   *
+   * Distinct from VERIFICATION_FAILED, which records an incorrect attempt and
+   * costs 15 XP. That is the right response to a bad submission and the wrong
+   * one to our own downtime: the player did nothing, and the message they are
+   * shown promises "nothing was counted against you". Reopens the challenge so
+   * they can simply submit again.
+   */
+  | { type: 'VERIFICATION_UNAVAILABLE'; checkpointIndex: number; now: number }
   | {
       type: 'VERIFICATION_PASSED';
       checkpointIndex: number;
@@ -302,6 +312,14 @@ export function transition(state: HuntState, action: HuntAction): HuntState {
       const bad = guardActive(state, action.checkpointIndex, ['VERIFYING']);
       if (bad) return reject(state, bad.code, bad.message);
       return accept(state, { phase: 'VERIFYING' });
+    }
+
+    case 'VERIFICATION_UNAVAILABLE': {
+      // Reopen WITHOUT touching incorrectAttempts. The distinction from
+      // VERIFICATION_FAILED is the entire point of this action existing.
+      const bad = guardActive(state, action.checkpointIndex, ['VERIFYING']);
+      if (bad) return reject(state, bad.code, bad.message);
+      return accept(state, { phase: 'CHALLENGE_OPEN' });
     }
 
     case 'VERIFICATION_PASSED':

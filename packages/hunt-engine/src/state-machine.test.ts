@@ -266,4 +266,44 @@ describe('hunt state machine — illegal transitions', () => {
     expect(after.error?.code).toBe('HUNT_ALREADY_FINISHED');
     expect(after.totalXp).toBe(state.totalXp);
   });
+
+  /**
+   * Our outage is not the player's mistake.
+   *
+   * VERIFICATION_FAILED records an incorrect attempt, which costs 15 XP on the
+   * eventual successful submission. That is right for a bad photo and wrong
+   * for a rate limit — and the message shown in that case promises "nothing
+   * was counted against you". Sampling the live verifier, three of six calls
+   * come back rate-limited, so this was a recurring, invisible charge.
+   */
+  it('VERIFICATION_UNAVAILABLE reopens the challenge without recording an attempt', () => {
+    let state = started();
+    state = transition(state, { type: 'ARRIVE', checkpointIndex: 0, now: 2_000 });
+    state = transition(state, { type: 'OPEN_CHALLENGE', checkpointIndex: 0, now: 3_000 });
+    state = transition(state, { type: 'SUBMIT', checkpointIndex: 0, now: 4_000 });
+    expect(state.phase).toBe('VERIFYING');
+
+    const before = state.progress.find((p) => p.index === 0)?.incorrectAttempts ?? 0;
+    state = transition(state, {
+      type: 'VERIFICATION_UNAVAILABLE',
+      checkpointIndex: 0,
+      now: 5_000,
+    });
+
+    expect(state.error).toBeNull();
+    // Reopened, so the player can simply submit again.
+    expect(state.phase).toBe('CHALLENGE_OPEN');
+    // And charged nothing for it. This is the whole point of the action.
+    expect(state.progress.find((p) => p.index === 0)?.incorrectAttempts ?? 0).toBe(before);
+  });
+
+  it('VERIFICATION_UNAVAILABLE is refused outside VERIFYING', () => {
+    const state = started();
+    const next = transition(state, {
+      type: 'VERIFICATION_UNAVAILABLE',
+      checkpointIndex: 0,
+      now: 2_000,
+    });
+    expect(next.error?.code).toBe('ILLEGAL_PHASE');
+  });
 });

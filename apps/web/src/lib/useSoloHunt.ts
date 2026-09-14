@@ -196,12 +196,40 @@ export function useSoloHunt(routeId: string, checkpoints: Checkpoint[]) {
       // With a verdict, trust the server's photo judgement. Without one we
       // cannot judge the photo at all, so we accept on the answer alone and
       // say so — a degraded pass that claims to be verified would be a lie.
+      /**
+       * A verdict the server could not form is not a failure by the player.
+       *
+       * needs-review means exactly that — a rate limit, a timeout, or a model
+       * that passed the visuals without confidence. Recomputing the outcome
+       * from landmarkMatch alone turned all of it into a rejection, which
+       * costs 15 XP, while the message said "nothing was counted against you".
+       * Sampling the live verifier, three of six calls come back rate-limited.
+       */
+      const held = verdict?.outcome === 'needs-review';
+
       const landmarkOk = verdict
         ? verdict.verification.landmarkMatch && verdict.verification.requiredActionCompleted
         : true;
-      const approved = answerCorrect && landmarkOk;
+      const approved = !held && answerCorrect && landmarkOk;
 
       setVerifying(false);
+
+      if (held) {
+        // Reopen the challenge, charge nothing, and say which of the two
+        // "we couldn't check it" cases this was.
+        dispatch({
+          type: 'VERIFICATION_UNAVAILABLE',
+          checkpointIndex: state.activeIndex,
+          now: Date.now(),
+        });
+        setLastOutcome({
+          outcome: 'needs-review',
+          message: verdict?.message ?? "We couldn't check that photo just now — nothing was counted against you.",
+          xpAwarded: 0,
+          ...(result ? { verification: result } : {}),
+        });
+        return;
+      }
 
       if (!approved) {
         dispatch({ type: 'VERIFICATION_FAILED', checkpointIndex: state.activeIndex, now: Date.now() });

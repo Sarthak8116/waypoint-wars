@@ -625,6 +625,7 @@ function SoloPanel(props: {
   // ---------------------------------------------------------------- arrived
   if (props.withinRadius) {
     const rejected = lastOutcome?.outcome === 'rejected';
+    const held = lastOutcome?.outcome === 'needs-review';
     const hasAnswer = props.answer.trim().length > 0;
     /**
      * Demo Mode runs on a laptop with no camera and nothing to photograph, so
@@ -673,14 +674,29 @@ function SoloPanel(props: {
         />
 
         {/* A rejection is a dead end unless it names the way out. */}
-        {rejected && (
+        {(rejected || held) && (
           <div
             className="card"
-            style={{ borderColor: 'var(--pink)', marginTop: 14, marginBottom: 0 }}
+            style={{
+              borderColor: held ? 'var(--yellow)' : 'var(--pink)',
+              marginTop: 14,
+              marginBottom: 0,
+            }}
           >
-            <p className="label" style={{ color: 'var(--pink)', marginBottom: 8 }}>
-              Not accepted{' '}
-              <span style={{ opacity: 0.75 }}>· {XP_RULES.INCORRECT_PENALTY} XP</span>
+            <p
+              className="label"
+              style={{ color: held ? 'var(--yellow)' : 'var(--pink)', marginBottom: 8 }}
+            >
+              {held ? (
+                <>
+                  Not sure yet <span style={{ opacity: 0.75 }}>· nothing charged</span>
+                </>
+              ) : (
+                <>
+                  Not accepted{' '}
+                  <span style={{ opacity: 0.75 }}>· {XP_RULES.INCORRECT_PENALTY} XP</span>
+                </>
+              )}
             </p>
             <p style={{ margin: '0 0 12px', fontSize: 15 }}>{lastOutcome?.message}</p>
             {/* An observation, not a ruling. See useSoloHunt's note. */}
