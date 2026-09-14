@@ -42,6 +42,89 @@ const JPEG = Buffer.from(
 const PHOTO_PATH = resolve(SHOT_DIR, 'submission.jpg');
 writeFileSync(PHOTO_PATH, JPEG);
 
+
+/** Force a "we could not check it" verdict, then a good one, and compare XP. */
+async function heldVerdictCostsNothing(browser) {
+  console.log('\na verifier outage');
+  const context = await browser.newContext({ viewport: { width: 430, height: 900 } });
+  const page = await context.newPage();
+
+  const verification = {
+    landmarkMatch: false,
+    requiredActionCompleted: false,
+    answerCorrect: false,
+    confidence: 0,
+    reason: 'The verification provider failed to return a judgement.',
+    mocked: false,
+  };
+  const zeroed = {
+    checkpointCompletion: 0, correctObservation: 0, speedBonus: 0, noHintBonus: 0,
+    hiddenDetailBonus: 0, incorrectPenalty: 0, hintPenalty: 0, routeCompletionBonus: 0, total: 0,
+  };
+
+  let call = 0;
+  await page.route('**/api/verify', async (route) => {
+    call += 1;
+    const held = {
+      outcome: 'needs-review', verification, withinRadius: true, distanceMeters: 5,
+      xpDelta: 0, xpBreakdown: zeroed,
+      message: "We couldn't check that photo just now — nothing was counted against you.",
+    };
+    const approved = {
+      ...held,
+      outcome: 'approved',
+      verification: {
+        ...verification, landmarkMatch: true, requiredActionCompleted: true,
+        answerCorrect: true, confidence: 0.9, reason: 'Looks right.',
+      },
+    };
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(call === 1 ? held : approved),
+    });
+  });
+
+  await gotoReady(page, `${BASE}/play?demo=1`);
+  await page.waitForSelector('button:has-text("Start hunt")', { timeout: 40_000 });
+  await page.locator('button:has-text("Start hunt")').click();
+  await page.locator('button:has-text("Walk there")').click();
+  await page.waitForSelector("text=/You're here/i", { timeout: 90_000 });
+
+  const question = ((await page.locator('h3').first().textContent()) ?? '').trim();
+  const answer = await page.evaluate(async (q) => {
+    const r = await fetch('/hunts/pittsburgh.json').then((x) => x.json());
+    const cps = Array.isArray(r.checkpoints) ? r.checkpoints : Object.values(r.checkpoints ?? {});
+    return cps.find((c) => c.observationQuestion === q)?.acceptedAnswers?.[0] ?? null;
+  }, question);
+
+  await page.setInputFiles('input[type="file"]', PHOTO_PATH).catch(() => {});
+  await page.waitForTimeout(1000);
+  await page.locator('input[placeholder="Your answer"]').fill(answer ?? '');
+  await page.locator('button:has-text("Submit")').first().click();
+  await page.waitForTimeout(3500);
+
+  const heldBody = await page.locator('body').innerText();
+  check(
+    'an outage is held, not rejected',
+    /Not sure yet/i.test(heldBody) && !/Not accepted/i.test(heldBody),
+  );
+  check('and says nothing was charged', /nothing charged/i.test(heldBody));
+
+  await page.setInputFiles('input[type="file"]', PHOTO_PATH).catch(() => {});
+  await page.waitForTimeout(900);
+  await page.locator('button:has-text("Submit")').first().click();
+  await page.waitForSelector('text=/photo not verified|Verified|simulated/i', { timeout: 60_000 });
+  await page.waitForTimeout(1000);
+
+  const doneBody = await page.locator('body').innerText();
+  const xp = Number((doneBody.match(/\+(\d+)\s*XP/) ?? [0, 0])[1]);
+  check('the retry scores as though nothing went wrong', xp === 225, `${xp} XP`);
+  check('no wrong-answer penalty in the breakdown', !/Wrong answers/i.test(doneBody));
+
+  await context.close();
+}
+
 async function main() {
   console.log('\nSolo hunt, complete, in a browser\n' + '─'.repeat(64));
 
@@ -211,6 +294,20 @@ async function main() {
     }
 
     check('no page errors during the whole run', errors.length === 0, errors.slice(0, 2).join(' ; '));
+
+    /**
+     * A verifier outage must cost the player nothing.
+     *
+     * The one case that cannot be provoked honestly — it needs a rate limit or
+     * a timeout — so the verify call is intercepted. Everything else is the
+     * real app: real state machine, real scoring, real screens.
+     *
+     * The proof is the XP on the retry. A clean first-time solve scores 225;
+     * if the held submission had been treated as a rejection the retry would
+     * score 210, because VERIFICATION_FAILED records an attempt worth -15.
+     * "> 0" would pass on the broken build, so the exact figure is asserted.
+     */
+    await heldVerdictCostsNothing(browser);
   } finally {
     await browser.close();
   }
